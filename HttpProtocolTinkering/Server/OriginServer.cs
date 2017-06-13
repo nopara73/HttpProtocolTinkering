@@ -10,13 +10,14 @@ namespace HttpProtocolTinkering.Server
 {
 	public class OriginServer
 	{
-		public ResponseMessage AcceptRequest(RequestMessage request)
+		public string AcceptRequest(string requestString)
 		{
+			var request = RequestMessage.FromString(requestString);
 			var protocolVersion = ProtocolVersion.HTTP11;
 
 			if (request.RequestLine.ProtocolVersion != ProtocolVersion.HTTP11)
 			{
-				return new ResponseMessage(new StatusLine(protocolVersion, StatusCode.HTTPVersionNotSupported));
+				return new ResponseMessage(new StatusLine(protocolVersion, StatusCode.HTTPVersionNotSupported)).ToString();
 			}
 
 			var response = new ResponseMessage(new StatusLine(protocolVersion, StatusCode.BadRequest));
@@ -33,7 +34,7 @@ namespace HttpProtocolTinkering.Server
 			WriteLine();
 			WriteLine("Sending response:");
 			WriteLine(response);
-			return response;
+			return response.ToString();
 		}
 	}
 }

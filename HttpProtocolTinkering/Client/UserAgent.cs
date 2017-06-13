@@ -16,7 +16,11 @@ namespace HttpProtocolTinkering.Client
 			WriteLine();
 			WriteLine("Sending request:");
 			WriteLine(request);
-			return originServer.AcceptRequest(request);
+
+			var requestString = request.ToString();
+			var responseString = originServer.AcceptRequest(requestString);
+
+			return ResponseMessage.FromString(responseString);
 		}
 	}
 }

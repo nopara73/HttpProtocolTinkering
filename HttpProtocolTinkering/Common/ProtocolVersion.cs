@@ -20,5 +20,15 @@ namespace HttpProtocolTinkering.Common
 					throw new NotImplementedException();
 			}
 		}
+
+		public static ProtocolVersion FromString(this ProtocolVersion me, string protocolVersionString)
+		{
+			// HTTP is case sensitive
+			if(protocolVersionString == ProtocolVersion.HTTP11.ToCorrectString())
+			{
+				return ProtocolVersion.HTTP11;
+			}
+			else throw new NotSupportedException($"{nameof(ProtocolVersion)}: {protocolVersionString} is not supported");
+		}
 	}
 }
