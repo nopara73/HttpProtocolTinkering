@@ -4,31 +4,68 @@ using System.Text;
 
 namespace HttpProtocolTinkering.Common
 {
-    public enum ProtocolVersion
-    {
-		HTTP11
-    }
-	public static class ProtocolVersionExtensions
+	public class ProtocolVersion : IEquatable<ProtocolVersion>, IEquatable<string>
 	{
-		public static string ToCorrectString(this ProtocolVersion me)
+		public string Value { get; }
+		public int MajorVersion => GetMajor(Value);
+		public int MinorVersion => GetMinor(Value);
+		public static ProtocolVersion HTTP11 = new ProtocolVersion("HTTP/1.1");
+
+		public ProtocolVersion(string protocolVersionString)
 		{
-			switch (me)
+			try
 			{
-				case ProtocolVersion.HTTP11:
-					return "HTTP/1.1";
-				default:
-					throw new NotImplementedException();
+				if (GetProtocol(protocolVersionString) != "HTTP")
+				{
+					throw new NotSupportedException($"Wrong protocol {nameof(ProtocolVersion)}: {protocolVersionString}");
+				}
+
+				// To assert it complies
+				GetMajor(protocolVersionString);
+				GetMinor(protocolVersionString);
+
+				Value = protocolVersionString;
 			}
+			catch(Exception ex)
+			{
+				throw new FormatException($"Wrong {nameof(ProtocolVersion)} format: {protocolVersionString}", ex);
+			}			
 		}
 
-		public static ProtocolVersion FromString(this ProtocolVersion me, string protocolVersionString)
+		private static string GetProtocol(string protocolVersionString)
 		{
-			// HTTP is case sensitive
-			if(protocolVersionString == ProtocolVersion.HTTP11.ToCorrectString())
-			{
-				return ProtocolVersion.HTTP11;
-			}
-			else throw new NotSupportedException($"{nameof(ProtocolVersion)}: {protocolVersionString} is not supported");
+			return protocolVersionString.Trim().Split(new char[] { '/' })[0];
 		}
+		private static int GetMajor(string protocolVersionString)
+		{
+			var versions = protocolVersionString.Trim().Split(new char[] { '/' })[1].Split(new char[] { '.' });
+			return int.Parse(versions[0]);
+		}
+		private static int GetMinor(string protocolVersionString)
+		{
+			var versions = protocolVersionString.Trim().Split(new char[] { '/' })[1].Split(new char[] { '.' });
+			return int.Parse(versions[1]);
+		}
+
+		public override string ToString()
+		{
+			return Value;
+		}
+
+		#region EqualityAndComparison
+
+		public override bool Equals(object obj) => obj is ProtocolVersion && this == (ProtocolVersion)obj;
+		public bool Equals(ProtocolVersion other) => this == other;
+		public override int GetHashCode() => Value.GetHashCode();
+		public static bool operator ==(ProtocolVersion x, ProtocolVersion y) => x.Value == y.Value;
+		public static bool operator !=(ProtocolVersion x, ProtocolVersion y) => !(x == y);
+
+		public bool Equals(string other) => Value == other;
+		public static bool operator ==(string x, ProtocolVersion y) => x == y.Value;
+		public static bool operator ==(ProtocolVersion x, string y) => x.Value == y;
+		public static bool operator !=(string x, ProtocolVersion y) => !(x == y);
+		public static bool operator !=(ProtocolVersion x, string y) => !(x == y);
+
+		#endregion
 	}
 }

@@ -15,12 +15,12 @@ namespace HttpProtocolTinkering.Common.Request
 		{
 			Type = type;
 			URI = uri;
-			ProtocolVersion = ProtocolVersion;
+			ProtocolVersion = protocolVersion;
 		}
 
 		public override string ToString()
 		{
-			return Type + SP + URI + SP + ProtocolVersion.ToCorrectString() + CRLF;
+			return Type + SP + URI + SP + ProtocolVersion.Value + CRLF;
 		}
 
 		public static RequestLine FromString(string requestLineString)
@@ -35,7 +35,7 @@ namespace HttpProtocolTinkering.Common.Request
 				var protocolVersionString = parts[2];
 				
 				var type = new RequestType().FromString(typeString);
-				var protocolVersion = new ProtocolVersion().FromString(protocolVersionString);
+				var protocolVersion = new ProtocolVersion(protocolVersionString);
 
 				return new RequestLine(type, uri, protocolVersion);
 			}

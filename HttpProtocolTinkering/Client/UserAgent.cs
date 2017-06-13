@@ -19,8 +19,14 @@ namespace HttpProtocolTinkering.Client
 
 			var requestString = request.ToString();
 			var responseString = originServer.AcceptRequest(requestString);
+			var response = ResponseMessage.FromString(responseString);
 
-			return ResponseMessage.FromString(responseString);
+			if(response.StatusLine.ProtocolVersion.MajorVersion != ProtocolVersion.HTTP11.MajorVersion)
+			{
+				throw new InvalidOperationException("Origin doesn't implement HTTP1 protocol properly");
+			}
+
+			return response;
 		}
 	}
 }

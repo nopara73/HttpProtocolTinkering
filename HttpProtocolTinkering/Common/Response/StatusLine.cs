@@ -12,13 +12,13 @@ namespace HttpProtocolTinkering.Common.Response
 
 		public StatusLine(ProtocolVersion protocolVersion, StatusCode status)
 		{
-			ProtocolVersion = ProtocolVersion;
+			ProtocolVersion = protocolVersion;
 			StatusCode = status;
 		}
 
 		public override string ToString()
 		{
-			return ProtocolVersion.ToCorrectString() + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
+			return ProtocolVersion.Value + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
 		}
 
 		public static StatusLine FromString(string statusLineString)
@@ -29,7 +29,7 @@ namespace HttpProtocolTinkering.Common.Response
 
 				var parts = new List<string>(statusLineString.Split(SP.ToCharArray(), StringSplitOptions.None));
 				var protocolVersionString = parts[0];
-				var protocolVersion = new ProtocolVersion().FromString(protocolVersionString);
+				var protocolVersion = new ProtocolVersion(protocolVersionString);
 				parts.RemoveAt(0);
 				var code = int.Parse(parts[0]);
 				new StatusCode().Validate(code);
