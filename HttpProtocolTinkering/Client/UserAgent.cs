@@ -6,22 +6,31 @@ using System.Text;
 using static System.Console;
 using HttpProtocolTinkering.Common.Request;
 using HttpProtocolTinkering.Common.Response;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace HttpProtocolTinkering.Client
 {
     public class UserAgent
     {
-		public ResponseMessage SendRequest(OriginServer originServer, RequestMessage request)
+		public async Task<HttpResponseMessage> SendRequestAsync(OriginServer originServer, RequestMessage request)
 		{
+			var requestString = request.ToString();
+
 			WriteLine();
 			WriteLine("Sending request:");
-			WriteLine(request);
+			WriteLine(requestString);
 
-			var requestString = request.ToString();
-			var responseString = originServer.AcceptRequest(requestString);
-			var response = ResponseMessage.FromString(responseString);
+			var responseString = await originServer.AcceptRequestAsync(requestString).ConfigureAwait(false);
 
-			if(response.StatusLine.ProtocolVersion.MajorVersion != ProtocolVersion.HTTP11.MajorVersion)
+			WriteLine();
+			WriteLine("Response arrived:");
+			WriteLine(responseString);
+
+			var response = new HttpResponseMessage().FromString(responseString);
+
+			if(response.Version.Major != HttpProtocol.HTTP11.Version.Major)
 			{
 				throw new InvalidOperationException("Origin doesn't implement HTTP1 protocol properly");
 			}

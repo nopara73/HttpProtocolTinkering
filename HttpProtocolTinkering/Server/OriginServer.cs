@@ -5,36 +5,36 @@ using HttpProtocolTinkering.Common;
 using static System.Console;
 using HttpProtocolTinkering.Common.Response;
 using HttpProtocolTinkering.Common.Request;
+using System.Net.Http;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace HttpProtocolTinkering.Server
 {
 	public class OriginServer
 	{
-		public string AcceptRequest(string requestString)
+		public async Task<string> AcceptRequestAsync(string requestString)
 		{
 			var request = RequestMessage.FromString(requestString);
-			var protocolVersion = ProtocolVersion.HTTP11;
+			var protocol = HttpProtocol.HTTP11;
 
-			if (request.RequestLine.ProtocolVersion.MajorVersion != protocolVersion.MajorVersion)
+			if (request.RequestLine.Protocol.Version.Major != protocol.Version.Major)
 			{
-				return new ResponseMessage(new StatusLine(protocolVersion, StatusCode.HTTPVersionNotSupported)).ToString();
+				return await new HttpResponseMessage(HttpStatusCode.HttpVersionNotSupported).ToHttpStringAsync().ConfigureAwait(false);
 			}
 
-			var response = new ResponseMessage(new StatusLine(protocolVersion, StatusCode.BadRequest));
-			var http11OkStatusLine = new StatusLine(protocolVersion, StatusCode.OK);
+			var response = new HttpResponseMessage(HttpStatusCode.OK);
 
-			if (request.RequestLine.Type == RequestType.GET)
+			if (request.RequestLine.Method == HttpMethod.Get)
 			{
-				if (request.RequestLine.URI == "foo")
+				if (request.RequestLine.URI == new UriBuilder("http", "foo").Uri)
 				{
-					response = new ResponseMessage(http11OkStatusLine, body: "bar");
+					response.Content = new StringContent("bar");
+					return await response.ToHttpStringAsync().ConfigureAwait(false);
 				}
 			}
-
-			WriteLine();
-			WriteLine("Sending response:");
-			WriteLine(response);
-			return response.ToString();
+			
+			return await new HttpResponseMessage(HttpStatusCode.BadRequest).ToHttpStringAsync().ConfigureAwait(false);
 		}
 	}
 }

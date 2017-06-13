@@ -2,44 +2,46 @@
 using System.Collections.Generic;
 using System.Text;
 using static HttpProtocolTinkering.Common.Constants;
+using System.Net.Http;
+using System.Net;
 
 namespace HttpProtocolTinkering.Common.Response
 {
     public class StatusLine
 	{
-		public ProtocolVersion ProtocolVersion { get; set; }
-		public StatusCode StatusCode { get; set; }
+		public HttpProtocol Protocol { get; set; }
+		public HttpStatusCode StatusCode { get; set; }
 
-		public StatusLine(ProtocolVersion protocolVersion, StatusCode status)
+		public StatusLine(HttpProtocol protocol, HttpStatusCode status)
 		{
-			ProtocolVersion = protocolVersion;
+			Protocol = protocol;
 			StatusCode = status;
 		}
 
 		public override string ToString()
 		{
-			return ProtocolVersion.Value + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
+			return Protocol.ToString() + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
 		}
 
 		public static StatusLine FromString(string statusLineString)
 		{
 			try
 			{
-				statusLineString = statusLineString.TrimEnd(CRLF.ToCharArray()); // if there's CRLF at the end remove it
+				var endOfProtocol = statusLineString.IndexOf(SP);
+				var protocolString = statusLineString.Substring(0, endOfProtocol);
+				var protocol = new HttpProtocol(protocolString);
+				statusLineString = statusLineString.Remove(0, endOfProtocol + 1);
+				
+				var endOfCode = statusLineString.IndexOf(SP);
+				var code = int.Parse(statusLineString.Substring(0, endOfCode));
+				new HttpStatusCode().Validate(code);
+				statusLineString = statusLineString.Remove(0, endOfCode + 1);
+				
+				var reason = statusLineString;
 
-				var parts = new List<string>(statusLineString.Split(SP.ToCharArray(), StringSplitOptions.None));
-				var protocolVersionString = parts[0];
-				var protocolVersion = new ProtocolVersion(protocolVersionString);
-				parts.RemoveAt(0);
-				var code = int.Parse(parts[0]);
-				new StatusCode().Validate(code);
+				HttpStatusCode statusCode = new HttpStatusCode().FromReasonString(reason);
 
-				parts.RemoveAt(0);
-				var reason = string.Join(SP, parts);
-
-				StatusCode statusCode = new StatusCode().FromReasonString(reason);
-
-				return new StatusLine(protocolVersion, statusCode);
+				return new StatusLine(protocol, statusCode);
 			}
 			catch (Exception ex)
 			{
