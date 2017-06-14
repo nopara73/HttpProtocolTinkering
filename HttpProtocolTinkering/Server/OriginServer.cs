@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using HttpProtocolTinkering.Common;
-using static System.Console;
-using HttpProtocolTinkering.Common.Response;
-using HttpProtocolTinkering.Common.Request;
+﻿using HttpProtocolTinkering.Common;
 using System.Net.Http;
 using System.Net;
 using System.Threading.Tasks;
@@ -31,18 +25,26 @@ namespace HttpProtocolTinkering.Server
 				return await new HttpResponseMessage(HttpStatusCode.HttpVersionNotSupported).ToHttpStringAsync().ConfigureAwait(false);
 			}
 
+			// https://tools.ietf.org/html/rfc7230#section-2.7.1
+			// A recipient that processes such a URI reference [without hostname] MUST reject it as invalid.
+			var responseBadRequest = new HttpResponseMessage(HttpStatusCode.BadRequest);
+			if (request.RequestUri.DnsSafeHost == "")
+			{
+				return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
+			}
+
 			var response = new HttpResponseMessage(HttpStatusCode.OK);
 
 			if (request.Method == HttpMethod.Get)
 			{
-				if (request.RequestUri == new UriBuilder("http", "foo").Uri)
+				if (request.RequestUri == new HttpRequestUriBuilder(UriScheme.http, "foo").Uri)
 				{
 					response.Content = new StringContent("bar");
 					return await response.ToHttpStringAsync().ConfigureAwait(false);
 				}
 			}
 			
-			return await new HttpResponseMessage(HttpStatusCode.BadRequest).ToHttpStringAsync().ConfigureAwait(false);
+			return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
 		}
 	}
 }

@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 // https://tools.ietf.org/html/rfc7230#section-2.6
 namespace HttpProtocolTinkering.Common
 {
 	public class HttpProtocol : IEquatable<HttpProtocol>, IEquatable<string>
 	{
-		public string Protocol { get; }
 		public Version Version { get; }
+		public const string Protocol = "HTTP";
 		public static HttpProtocol HTTP11 = new HttpProtocol("HTTP/1.1");
+		public static HttpProtocol HTTP10 = new HttpProtocol("HTTP/1.0");
 
 		public HttpProtocol(string protocolString)
 		{
@@ -26,11 +25,10 @@ namespace HttpProtocolTinkering.Common
 				Version = new Version(parts[1]);
 
 				string protocol = GetProtocol(protocolString);
-				if (protocol != "HTTP")
+				if (protocol != Protocol)
 				{
 					throw new NotSupportedException($"Wrong protocol {nameof(HttpProtocol)}: {protocolString}");
 				}
-				Protocol = protocol;
 			}
 			catch(Exception ex)
 			{

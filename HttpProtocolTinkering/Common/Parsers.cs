@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Net;
 using System.Net.Http;
-using System.Reflection;
 
 namespace HttpProtocolTinkering.Common
 {
-    public static class Parsers
+	public static class Parsers
     {
 		public static HttpMethod ToHttpMethod(string methodString)
 		{

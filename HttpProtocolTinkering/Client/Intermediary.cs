@@ -1,15 +1,12 @@
 ﻿using HttpProtocolTinkering.Common;
 using HttpProtocolTinkering.Server;
-using System;
-using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using static System.Console;
 
 namespace HttpProtocolTinkering.Client
 {
-    public class Intermediary
+	public class Intermediary
     {
 		public readonly HttpProtocol Protocol = HttpProtocol.HTTP11;
 

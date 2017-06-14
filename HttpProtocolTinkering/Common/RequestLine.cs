@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using static HttpProtocolTinkering.Common.Constants;
-using System.Net;
 using System.Net.Http;
 
-namespace HttpProtocolTinkering.Common.Request
+namespace HttpProtocolTinkering.Common
 {
-    public class RequestLine
+	public class RequestLine
     {
 		public HttpMethod Method { get; set; }
 		public Uri URI { get; set; }
@@ -16,6 +14,9 @@ namespace HttpProtocolTinkering.Common.Request
 		public RequestLine(HttpMethod method, Uri uri, HttpProtocol protocol)
 		{
 			Method = method;
+			// https://tools.ietf.org/html/rfc7230#section-2.7.1
+			// A sender MUST NOT generate an "http" URI with an empty host identifier.
+			if (uri.DnsSafeHost == "") throw new HttpRequestException("Host identifier is empty");
 			URI = uri;
 			Protocol = protocol;
 		}
