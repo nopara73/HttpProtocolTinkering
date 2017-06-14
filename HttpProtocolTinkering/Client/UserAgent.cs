@@ -16,23 +16,13 @@ namespace HttpProtocolTinkering.Client
     {
 		public async Task<HttpResponseMessage> SendRequestAsync(OriginServer originServer, HttpRequestMessage request)
 		{
-			var requestString = await request.ToHttpStringAsync().ConfigureAwait(false);
+			Intermediary intermediary = new Intermediary();
 
-			WriteLine();
-			WriteLine("Sending request:");
-			WriteLine(requestString);
+			var response = await intermediary.SendRequestAsync(originServer, request).ConfigureAwait(false);
 
-			var responseString = await originServer.AcceptRequestAsync(requestString).ConfigureAwait(false);
-
-			WriteLine();
-			WriteLine("Response arrived:");
-			WriteLine(responseString);
-
-			var response = new HttpResponseMessage().FromString(responseString);
-
-			if(response.Version.Major != HttpProtocol.HTTP11.Version.Major)
+			if(response.Version.Major != request.Version.Major)
 			{
-				throw new InvalidOperationException("Origin doesn't implement HTTP1 protocol properly");
+				throw new HttpRequestException($"Origin server's HTTP major version differs: {nameof(response)}: {response.Version.Major} != {nameof(request)}: {request.Version.Major}");
 			}
 
 			return response;

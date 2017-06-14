@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
+// https://tools.ietf.org/html/rfc7230#section-2.6
 namespace HttpProtocolTinkering.Common
 {
 	public class HttpProtocol : IEquatable<HttpProtocol>, IEquatable<string>
@@ -42,6 +43,7 @@ namespace HttpProtocolTinkering.Common
 			return protocolString.Trim().Split(new char[] { '/' })[0];
 		}
 
+		// HTTP-name "/" DIGIT "." DIGIT
 		public override string ToString() => $"{Protocol}/{Version.ToString()}";
 
 		#region EqualityAndComparison
