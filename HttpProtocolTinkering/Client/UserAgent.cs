@@ -14,9 +14,9 @@ namespace HttpProtocolTinkering.Client
 {
     public class UserAgent
     {
-		public async Task<HttpResponseMessage> SendRequestAsync(OriginServer originServer, RequestMessage request)
+		public async Task<HttpResponseMessage> SendRequestAsync(OriginServer originServer, HttpRequestMessage request)
 		{
-			var requestString = request.ToString();
+			var requestString = await request.ToHttpStringAsync().ConfigureAwait(false);
 
 			WriteLine();
 			WriteLine("Sending request:");

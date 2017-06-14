@@ -15,19 +15,19 @@ namespace HttpProtocolTinkering.Server
 	{
 		public async Task<string> AcceptRequestAsync(string requestString)
 		{
-			var request = RequestMessage.FromString(requestString);
+			var request = new HttpRequestMessage().FromString(requestString);
 			var protocol = HttpProtocol.HTTP11;
 
-			if (request.RequestLine.Protocol.Version.Major != protocol.Version.Major)
+			if (request.Version.Major != protocol.Version.Major)
 			{
 				return await new HttpResponseMessage(HttpStatusCode.HttpVersionNotSupported).ToHttpStringAsync().ConfigureAwait(false);
 			}
 
 			var response = new HttpResponseMessage(HttpStatusCode.OK);
 
-			if (request.RequestLine.Method == HttpMethod.Get)
+			if (request.Method == HttpMethod.Get)
 			{
-				if (request.RequestLine.URI == new UriBuilder("http", "foo").Uri)
+				if (request.RequestUri == new UriBuilder("http", "foo").Uri)
 				{
 					response.Content = new StringContent("bar");
 					return await response.ToHttpStringAsync().ConfigureAwait(false);
