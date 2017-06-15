@@ -35,9 +35,10 @@ namespace HttpProtocolTinkering.Server
 
 			var response = new HttpResponseMessage(HttpStatusCode.OK);
 
+			var uriBuilder = new HttpRequestUriBuilder(UriScheme.http, "foo.com");
 			if (request.Method == HttpMethod.Get)
 			{
-				if (request.RequestUri == new HttpRequestUriBuilder(UriScheme.http, "foo").Uri)
+				if (request.RequestUri == uriBuilder.BuildUri("foo"))
 				{
 					response.Content = new StringContent("bar");
 					return await response.ToHttpStringAsync().ConfigureAwait(false);
