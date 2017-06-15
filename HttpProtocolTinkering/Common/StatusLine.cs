@@ -1,12 +1,12 @@
 ﻿using System;
 using static HttpProtocolTinkering.Common.Constants;
 using System.Net;
+using System.Collections.Generic;
 
 namespace HttpProtocolTinkering.Common
 {
-	public class StatusLine
+	public class StatusLine : StartLine
 	{
-		public HttpProtocol Protocol { get; set; }
 		public HttpStatusCode StatusCode { get; set; }
 
 		public StatusLine(HttpProtocol protocol, HttpStatusCode status)

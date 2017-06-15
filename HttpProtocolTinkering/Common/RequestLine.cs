@@ -5,11 +5,10 @@ using System.Net.Http;
 
 namespace HttpProtocolTinkering.Common
 {
-	public class RequestLine
-    {
+	public class RequestLine : StartLine
+	{
 		public HttpMethod Method { get; set; }
 		public Uri URI { get; set; }
-		public HttpProtocol Protocol { get; set; }
 
 		public RequestLine(HttpMethod method, Uri uri, HttpProtocol protocol)
 		{
