@@ -1,5 +1,6 @@
 ﻿using HttpProtocolTinkering.Common;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using static HttpProtocolTinkering.Common.Constants;
 
@@ -9,36 +10,34 @@ namespace System.Net.Http
     {
 		public static HttpResponseMessage FromString(this HttpResponseMessage me, string responseString)
 		{
+			// https://tools.ietf.org/html/rfc7230#section-3
+			// The normal procedure for parsing an HTTP message is to read the
+			// start - line into a structure, read each header field into a hash table
+			// by field name until the empty line, and then use the parsed data to
+			// determine if a message body is expected.If a message body has been
+			// indicated, then it is read as a stream until an amount of octets
+			// equal to the message body length is read or the connection is closed.
 			try
 			{
-				int statusLineEnd = responseString.IndexOf(CRLF);
-				StatusLine statusLine = StatusLine.FromString(responseString.Substring(0, statusLineEnd));
-				responseString = responseString.Remove(0, statusLineEnd + 2);
-
-				// server might only send status line
+				var message = HttpMessage.FromString(responseString);
+				var statusLine = StatusLine.FromString(message.StartLine);
+				
 				var response = new HttpResponseMessage(statusLine.StatusCode);
-				if (responseString.Length == 0)
+
+				if (message.Headers != "")
 				{
-					return response;
+					foreach (var headerLine in message.Headers.Split(CRLF, StringSplitOptions.RemoveEmptyEntries))
+					{
+						var headerLineParts = headerLine.Split(":", StringSplitOptions.RemoveEmptyEntries);
+						response.Headers.Add(headerLineParts[0].Trim(), headerLineParts[1].Trim());
+					}
 				}
 
-				int headersEnd = responseString.IndexOf(CRLF + CRLF);
-				var headersString = responseString.Substring(0, headersEnd);
-
-				foreach (var headerLine in headersString.Split(CRLF, StringSplitOptions.RemoveEmptyEntries))
+				if (message.Body != "")
 				{
-					var headerLineParts = headerLine.Split(":", StringSplitOptions.RemoveEmptyEntries);
-					response.Headers.Add(headerLineParts[0].Trim(), headerLineParts[1].Trim());
+					response.Content = new StringContent(message.Body);
 				}
 
-				responseString = responseString.Remove(0, headersEnd + 4);
-				// no need to send body
-				if (responseString.Length == 0)
-				{
-					return response;
-				}
-
-				response.Content = new StringContent(responseString);
 				return response;
 			}
 			catch (Exception ex)
@@ -49,27 +48,21 @@ namespace System.Net.Http
 
 		public static async Task<string> ToHttpStringAsync(this HttpResponseMessage me)
 		{
-			var statusLine = new StatusLine(new HttpProtocol($"HTTP/{me.Version.Major}.{me.Version.Minor}"), me.StatusCode).ToString();
-			var headers = me.Headers.ToString();
+			var startLine = new StatusLine(new HttpProtocol($"HTTP/{me.Version.Major}.{me.Version.Minor}"), me.StatusCode).ToString();
 
-			var hasHeaders = headers != "";
-			var hasContent = me.Content != null;
-
-			string content;
-			if (hasContent)
-				content = await me.Content.ReadAsStringAsync().ConfigureAwait(false);
-			else content = "";
-
-			var ret = statusLine;
-			if (!hasHeaders && !hasContent)
+			string headers = "";
+			if(me.Headers != null && me.Headers.Count() != 0)
 			{
-
+				headers = me.Headers.ToString();
 			}
-			else if (hasHeaders)
-				ret += headers + CRLF + content;
-			else ret += CRLF + CRLF + content;
 
-			return ret;
+			string body = "";
+			if (me.Content != null)
+			{
+				body = await me.Content.ReadAsStringAsync().ConfigureAwait(false);
+			}
+
+			return new HttpMessage(startLine, headers, body).ToString();			
 		}
 	}
 }

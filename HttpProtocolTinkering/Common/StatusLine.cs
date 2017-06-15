@@ -24,6 +24,8 @@ namespace HttpProtocolTinkering.Common
 		{
 			try
 			{
+				statusLineString = statusLineString.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase); // if there's CRLF at the end remove it
+
 				var endOfProtocol = statusLineString.IndexOf(SP);
 				var protocolString = statusLineString.Substring(0, endOfProtocol);
 				var protocol = new HttpProtocol(protocolString);

@@ -29,7 +29,7 @@ namespace HttpProtocolTinkering.Common
 		{
 			try
 			{
-				requestLineString = requestLineString.TrimEnd(CRLF.ToCharArray()); // if there's CRLF at the end remove it
+				requestLineString = requestLineString.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase); // if there's CRLF at the end remove it
 
 				var parts = new List<string>(requestLineString.Split(SP.ToCharArray(), StringSplitOptions.None));
 				var methodString = parts[0];
