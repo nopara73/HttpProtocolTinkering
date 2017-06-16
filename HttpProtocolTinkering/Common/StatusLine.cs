@@ -29,7 +29,14 @@ namespace HttpProtocolTinkering.Common
 				var code = int.Parse(codeString);
 				new HttpStatusCode().Validate(code);
 
-				HttpStatusCode statusCode = new HttpStatusCode().FromReasonString(reason);
+				var statusCode = (HttpStatusCode)code;
+
+				// https://tools.ietf.org/html/rfc7230#section-3.1.2
+				// The reason-phrase element exists for the sole purpose of providing a
+				// textual description associated with the numeric status code, mostly
+				// out of deference to earlier Internet application protocols that were
+				// more frequently used with interactive text clients.A client SHOULD
+				// ignore the reason - phrase content.
 
 				return new StatusLine(protocol, statusCode);
 			}

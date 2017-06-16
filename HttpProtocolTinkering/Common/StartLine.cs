@@ -41,7 +41,7 @@ namespace HttpProtocolTinkering.Common
 				{
 					var part = reader.ReadPart(SP.ToCharArray()[0]);
 
-					if(part == null)
+					if(part == null || part == "")
 					{
 						break;
 					}
