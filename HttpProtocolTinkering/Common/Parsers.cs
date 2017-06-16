@@ -10,38 +10,37 @@ namespace HttpProtocolTinkering.Common
 			// https://tools.ietf.org/html/rfc7230#section-3.1.1
 			// The request method is case-sensitive.
 			var method = HttpMethod.Delete;
-			const StringComparison stringComparision = StringComparison.Ordinal;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}
 			method = HttpMethod.Get;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}
 			method = HttpMethod.Head;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}
 			method = HttpMethod.Options;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}
 			method = HttpMethod.Post;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}
 			method = HttpMethod.Put;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}
 			method = HttpMethod.Trace;
-			if (method.Method.Equals(methodString, stringComparision))
+			if (method.Method == methodString)
 			{
 				return method;
 			}

@@ -7,36 +7,27 @@ namespace HttpProtocolTinkering.Common
 {
 	public class StatusLine : StartLine
 	{
-		public HttpStatusCode StatusCode { get; set; }
+		public HttpStatusCode StatusCode { get; private set; }
 
 		public StatusLine(HttpProtocol protocol, HttpStatusCode status)
 		{
 			Protocol = protocol;
 			StatusCode = status;
-		}
 
-		public override string ToString()
-		{
-			return Protocol.ToString() + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
+			StartLineString = Protocol.ToString() + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
 		}
 
 		public static StatusLine FromString(string statusLineString)
 		{
 			try
 			{
-				statusLineString = statusLineString.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase); // if there's CRLF at the end remove it
-
-				var endOfProtocol = statusLineString.IndexOf(SP);
-				var protocolString = statusLineString.Substring(0, endOfProtocol);
+				var parts = GetParts(statusLineString);
+				var protocolString = parts[0];
+				var codeString = parts[1];
+				var reason = parts[2];
 				var protocol = new HttpProtocol(protocolString);
-				statusLineString = statusLineString.Remove(0, endOfProtocol + 1);
-				
-				var endOfCode = statusLineString.IndexOf(SP);
-				var code = int.Parse(statusLineString.Substring(0, endOfCode));
+				var code = int.Parse(codeString);
 				new HttpStatusCode().Validate(code);
-				statusLineString = statusLineString.Remove(0, endOfCode + 1);
-				
-				var reason = statusLineString;
 
 				HttpStatusCode statusCode = new HttpStatusCode().FromReasonString(reason);
 

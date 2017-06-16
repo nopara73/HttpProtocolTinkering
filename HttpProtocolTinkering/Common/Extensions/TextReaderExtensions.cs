@@ -50,5 +50,36 @@ namespace System.IO
 			},
 			me, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 		}
+		
+		public static string ReadPart(this TextReader me, char separator)
+		{
+			var sb = new StringBuilder();
+			while (true)
+			{
+				int ch = me.Read();
+				if (ch == -1) break;
+
+				if (ch == separator)
+				{
+					return sb.ToString();
+				}
+				sb.Append((char)ch);
+			}
+			if (sb.Length > 0)
+			{
+				return sb.ToString();
+			}
+
+			return null;
+		}
+
+		public static Task<string> ReadPartAsync(this TextReader me, char separator)
+		{
+			return Task<String>.Factory.StartNew(state =>
+			{
+				return ((TextReader)state).ReadPart(separator);
+			},
+			me, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+		}
 	}
 }

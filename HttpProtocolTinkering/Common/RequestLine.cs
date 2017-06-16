@@ -9,8 +9,8 @@ namespace HttpProtocolTinkering.Common
 	// request-line   = method SP request-target SP HTTP-version CRLF
 	public class RequestLine : StartLine
 	{
-		public HttpMethod Method { get; set; }
-		public Uri URI { get; set; }
+		public HttpMethod Method { get; private set; }
+		public Uri URI { get; private set; }
 
 		public RequestLine(HttpMethod method, Uri uri, HttpProtocol protocol)
 		{
@@ -20,20 +20,15 @@ namespace HttpProtocolTinkering.Common
 			if (uri.DnsSafeHost == "") throw new HttpRequestException("Host identifier is empty");
 			URI = uri;
 			Protocol = protocol;
-		}
 
-		public override string ToString()
-		{
-			return Method.Method + SP + URI + SP + Protocol.ToString() + CRLF;
+			StartLineString = Method.Method + SP + URI + SP + Protocol.ToString() + CRLF;
 		}
 
 		public static RequestLine FromString(string requestLineString)
 		{
 			try
 			{
-				requestLineString = requestLineString.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase); // if there's CRLF at the end remove it
-
-				var parts = new List<string>(requestLineString.Split(SP.ToCharArray(), StringSplitOptions.None));
+				var parts = GetParts(requestLineString);
 				var methodString = parts[0];
 				var uri = new Uri(parts[1]);
 				var protocolString = parts[2];

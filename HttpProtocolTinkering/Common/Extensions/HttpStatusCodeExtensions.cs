@@ -13,9 +13,10 @@ namespace System.Net
 		public static HttpStatusCode FromReasonString(this HttpStatusCode me, string reason)
 		{
 			foreach (HttpStatusCode code in Enum.GetValues(typeof(HttpStatusCode)))
-			{
+			{				
 				// not sure if case sensitive or not, let's do not case sensitive and if I encounter the opposite some in the specificaiton I'll modify it
-				if (code != HttpStatusCode.Unused && code.ToReasonString().Equals(reason, StringComparison.OrdinalIgnoreCase))
+				string r = code.ToReasonString();
+				if (code != HttpStatusCode.Unused && r.Equals(reason, StringComparison.OrdinalIgnoreCase))
 				{
 					return code;
 				}

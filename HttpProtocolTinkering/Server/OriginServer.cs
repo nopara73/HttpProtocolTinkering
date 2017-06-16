@@ -7,6 +7,12 @@ namespace HttpProtocolTinkering.Server
 {
 	public class OriginServer
 	{
+		// https://tools.ietf.org/html/rfc7230#section-3.1.1
+		// Various ad hoc limitations on request-line length are found in
+		// practice.It is RECOMMENDED that all HTTP senders and recipients
+		// support, at a minimum, request-line lengths of 8000 octets.
+		public int UriLength = 8190; // This is the default at Apache, let's use this
+
 		public async Task<string> AcceptRequestAsync(string requestString)
 		{
 			var responseBadRequest = new HttpResponseMessage(HttpStatusCode.BadRequest);
@@ -31,6 +37,14 @@ namespace HttpProtocolTinkering.Server
 				// https://tools.ietf.org/html/rfc7230#section-2.7.1
 				// A recipient that processes such a URI reference [without hostname] MUST reject it as invalid.
 				if (request.RequestUri.DnsSafeHost == "")
+				{
+					return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
+				}
+
+				// https://tools.ietf.org/html/rfc7230#section-3.1.1
+				// A server that receives a request-target longer than any URI it wishes to parse MUST respond
+				// with a 414(URI Too Long) status code
+				if (request.RequestUri.ToString().Length > UriLength)
 				{
 					return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
 				}

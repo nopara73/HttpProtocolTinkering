@@ -63,9 +63,7 @@ namespace HttpProtocolTinkering.Common
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// A recipient MUST parse an HTTP message as a sequence of octets in an
 			// encoding that is a superset of US-ASCII[USASCII].
-			byte[] messageBytes = Encoding.ASCII.GetBytes(message);
-			using (var stream = new MemoryStream(messageBytes, index: 0, count: messageBytes.Length, writable: false, publiclyVisible: false))
-			using (TextReader reader = new StreamReader(stream, Encoding.ASCII))
+			using (var reader = new StringReader(message))
 			{
 				// Read until the first CRLF
 				// the CRLF is part of the startLine
