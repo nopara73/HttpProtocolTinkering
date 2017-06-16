@@ -8,7 +8,7 @@ namespace System.Net.Http
 {
     public static class HttpResponseMessageExtensions
     {
-		public static HttpResponseMessage FromString(this HttpResponseMessage me, string responseString)
+		public static async Task<HttpResponseMessage> FromStringAsync(this HttpResponseMessage me, string responseString)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// The normal procedure for parsing an HTTP message is to read the
@@ -19,7 +19,7 @@ namespace System.Net.Http
 			// equal to the message body length is read or the connection is closed.
 			try
 			{
-				var message = HttpMessage.FromString(responseString);
+				var message = await HttpMessage.FromStringAsync(responseString).ConfigureAwait(false);
 				var statusLine = StatusLine.FromString(message.StartLine);
 				
 				var response = new HttpResponseMessage(statusLine.StatusCode);

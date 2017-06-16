@@ -7,10 +7,10 @@ namespace HttpProtocolTinkering.Common
     {
 		public static HttpMethod ToHttpMethod(string methodString)
 		{
-			// not sure if case sensitive or not, let's do not case sensitive and if I encounter the opposite some in the specificaiton I'll modify it
-
+			// https://tools.ietf.org/html/rfc7230#section-3.1.1
+			// The request method is case-sensitive.
 			var method = HttpMethod.Delete;
-			const StringComparison stringComparision = StringComparison.OrdinalIgnoreCase;
+			const StringComparison stringComparision = StringComparison.Ordinal;
 			if (method.Method.Equals(methodString, stringComparision))
 			{
 				return method;

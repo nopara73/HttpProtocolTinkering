@@ -30,7 +30,7 @@ namespace HttpProtocolTinkering.Client
 			WriteLine("Response arrived:");
 			WriteLine(responseString);
 
-			var response = new HttpResponseMessage().FromString(responseString);
+			var response = await new HttpResponseMessage().FromStringAsync(responseString).ConfigureAwait(false);
 
 			if (response.Version.Major != request.Version.Major)
 			{

@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace HttpProtocolTinkering.Common
 {
@@ -56,37 +57,53 @@ namespace HttpProtocolTinkering.Common
 		{
 			return StartLine + Headers + CRLF + Body;
 		}
-
-		public static HttpMessage FromString(string message)
+		
+		public static async Task<HttpMessage> FromStringAsync(string message)
 		{
-			int startLineEnd = message.IndexOf(CRLF);
-			int headersStart = startLineEnd + 2;
-			string startLine = message.Substring(0, headersStart); // the CRLF is part of the startLine
+			// https://tools.ietf.org/html/rfc7230#section-3
+			// A recipient MUST parse an HTTP message as a sequence of octets in an
+			// encoding that is a superset of US-ASCII[USASCII].
+			byte[] messageBytes = Encoding.ASCII.GetBytes(message);
+			using (var stream = new MemoryStream(messageBytes, index: 0, count: messageBytes.Length, writable: false, publiclyVisible: false))
+			using (TextReader reader = new StreamReader(stream, Encoding.ASCII))
+			{
+				// Read until the first CRLF
+				// the CRLF is part of the startLine
+				var startLine = await reader.ReadLineAsync(CRLF: true).ConfigureAwait(false) + CRLF;
 
-			if (message.Length == headersStart)
-			{
-				return new HttpMessage(startLine);
-			}
-			else
-			{
-				// https://tools.ietf.org/html/rfc7230#section-3
-				// A recipient that receives whitespace between the
-				// start - line and the first header field MUST either reject the message
-				// as invalid or
-				if (Char.IsWhiteSpace(message[headersStart]))
+				var headers = "";
+				var firstRead = true;
+				while (true)
 				{
-					throw new FormatException($"Invalid {nameof(HttpMessage)}: Cannot be whitespace between the start line and the headers");
+					var header = await reader.ReadLineAsync(CRLF: true).ConfigureAwait(false);
+					if (header == null) throw new FormatException($"Malformed {nameof(HttpMessage)}: End of headers must be CRLF");
+					if (header == "")
+					{
+						// 2 CRLF was read in row so it's the end of the headers
+						break;
+					}
+
+					if (firstRead)
+					{
+						// https://tools.ietf.org/html/rfc7230#section-3
+						// A recipient that receives whitespace between the
+						// start - line and the first header field MUST either reject the message
+						// as invalid or
+						if (Char.IsWhiteSpace(header[0]))
+						{
+							throw new FormatException($"Invalid {nameof(HttpMessage)}: Cannot be whitespace between the start line and the headers");
+						}
+					}
+
+					headers += header + CRLF; // CRLF is part of the headerstring
+					firstRead = false;
 				}
+
+				// the rest is body
+				var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+
+				return new HttpMessage(startLine, headers, body);
 			}
-
-			int headersEnd = message.IndexOf(CRLF + CRLF, startIndex: headersStart);
-			string headers = message.Substring(headersStart, (headersEnd - startLineEnd) + 2); // the second CRLF not part of the headers
-
-			int bodyStart = headersEnd + 4;
-			if (bodyStart == message.Length) return new HttpMessage(startLine, headers);
-			string body = message.Substring(bodyStart, message.Length - bodyStart); // neither the body
-
-			return new HttpMessage(startLine, headers, body);
 		}
 	}
 }

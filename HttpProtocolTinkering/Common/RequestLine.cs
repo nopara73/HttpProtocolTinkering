@@ -5,6 +5,8 @@ using System.Net.Http;
 
 namespace HttpProtocolTinkering.Common
 {
+	// https://tools.ietf.org/html/rfc7230#section-3.1.1
+	// request-line   = method SP request-target SP HTTP-version CRLF
 	public class RequestLine : StartLine
 	{
 		public HttpMethod Method { get; set; }
