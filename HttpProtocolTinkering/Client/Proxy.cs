@@ -1,7 +1,10 @@
 ﻿using HttpProtocolTinkering.Common;
 using HttpProtocolTinkering.Server;
+using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using static HttpProtocolTinkering.Common.Constants;
 using static System.Console;
 
 namespace HttpProtocolTinkering.Client
@@ -11,7 +14,7 @@ namespace HttpProtocolTinkering.Client
 	// is listed in the Connection header field(Section 6.1) or the proxy
 	// is specifically configured to block, or otherwise transform, such
 	// fields.Other recipients SHOULD ignore unrecognized header fields.
-	public class Intermediary
+	public class Proxy
     {
 		public readonly HttpProtocol Protocol = HttpProtocol.HTTP11;
 

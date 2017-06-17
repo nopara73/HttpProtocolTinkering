@@ -32,6 +32,8 @@ namespace HttpProtocolTinkering.Common
 		}
 		public static HeaderSection FromString(string headersString)
 		{
+			headersString = HeaderField.CorrectObsFolding(headersString);
+
 			var hs = new HeaderSection();
 			if (headersString.EndsWith(CRLF + CRLF))
 			{

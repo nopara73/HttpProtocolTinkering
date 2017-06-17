@@ -14,7 +14,19 @@ namespace HttpProtocolTinkering.Common
 		public HeaderField(string name, string value)
 		{
 			Name = name;
+
+			value = CorrectObsFolding(value);
 			Value = value;
+		}
+
+		public static string CorrectObsFolding(string text)
+		{
+			// fix obs line folding
+			// https://tools.ietf.org/html/rfc7230#section-3.2.4
+			// replace each received obs-fold with one or more SP octets prior to interpreting the field value
+			text = text.Replace(CRLF + SP, SP + SP);
+			text = text.Replace(CRLF + TAB, SP + TAB);
+			return text;
 		}
 
 		// https://tools.ietf.org/html/rfc7230#section-3.2

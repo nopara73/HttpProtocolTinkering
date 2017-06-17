@@ -1,6 +1,7 @@
 ﻿using HttpProtocolTinkering.Common;
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using static HttpProtocolTinkering.Common.Constants;
 
@@ -24,6 +25,27 @@ namespace System.Net.Http
 
 			if (message.Headers != "")
 			{
+				// https://tools.ietf.org/html/rfc7230#section-3.2.4
+				// No whitespace is allowed between the header field-name and colon.
+				// A proxy MUST remove any such whitespace from a response message before forwarding the message downstream.
+				var sb = new StringBuilder();
+				var parts = message.Headers.Split(':');
+				foreach (var part in parts)
+				{
+					// not checking the last part
+					if(part == parts.Last())
+					{
+						sb.Append(part);
+						continue;
+					}
+
+					if (Char.IsWhiteSpace(part.Last()))
+					{
+						sb.Append(part.Substring(0, part.Length - 1));
+					}
+					else sb.Append(part);
+				}
+
 				var headers = HeaderSection.FromString(message.Headers);
 				foreach(var header in headers.ToHttpResponseHeaders())
 				{

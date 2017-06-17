@@ -2,6 +2,7 @@
 using HttpProtocolTinkering.Common;
 using HttpProtocolTinkering.Server;
 using System;
+using System.Net;
 using System.Net.Http;
 using static System.Console;
 
@@ -19,12 +20,12 @@ namespace HttpProtocolTinkering
 			var requestLine = new RequestLine(HttpMethod.Get, uriBuilder.BuildUri("foo"), HttpProtocol.HTTP11);
 			var request = new HttpRequestMessage(requestLine.Method, requestLine.URI);
 
-			request.Headers.TryAddWithoutValidation("moo", "mee");
+			request.Headers.TryAddWithoutValidation("moo", "mee\n\r obsfolded");
 			request.Headers.TryAddWithoutValidation("boo", "");
 			request.Headers.TryAddWithoutValidation("soo", new string[] { "oo","koo"});
 			request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5 (.NET CLR 3.5.30729) ");
 			request.Headers.TryAddWithoutValidation("Accept", " text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-
+			
 			userAgent.SendRequestAsync(originServer, request).Wait();
 			
 			var requestLine2 = new RequestLine(HttpMethod.Get, uriBuilder.BuildUri("foo2"), HttpProtocol.HTTP11);
