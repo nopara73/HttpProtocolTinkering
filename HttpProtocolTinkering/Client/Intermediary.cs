@@ -6,6 +6,11 @@ using static System.Console;
 
 namespace HttpProtocolTinkering.Client
 {
+	// https://tools.ietf.org/html/rfc7230#section-3.2.1
+	// A proxy MUST forward unrecognized header fields unless the field-name
+	// is listed in the Connection header field(Section 6.1) or the proxy
+	// is specifically configured to block, or otherwise transform, such
+	// fields.Other recipients SHOULD ignore unrecognized header fields.
 	public class Intermediary
     {
 		public readonly HttpProtocol Protocol = HttpProtocol.HTTP11;

@@ -22,6 +22,7 @@ namespace HttpProtocolTinkering.Common
 		// by a colon(":"), optional leading whitespace, the field value, and
 		// optional trailing whitespace.
 		// header-field   = field-name ":" OWS field-value OWS
+		// The OWS rule is used where zero or more linear whitespace octets	might appear.
 		public string ToString(bool endWithCRLF)
 		{
 			var ret = Name + ":" + Value;
@@ -44,16 +45,16 @@ namespace HttpProtocolTinkering.Common
 			using(var reader = new StringReader(fieldString))
 			{
 				var name = reader.ReadPart(':');
+				// if empty
 				if(name == null || name.Trim() == "") throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
+				// whitespace not allowed
+				if (name != name.Trim()) throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
 
 				var value = reader.ReadToEnd();
-
-				// if there's no value
+				// correction
 				if (value == null) value = "";
-				// if it starts with more than one whitespace
-				if (value.Length > 1 && Char.IsWhiteSpace(value[0]) && Char.IsWhiteSpace(value[1])) throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
-				// if it ends with more than one whitespace
-				if (value.Length > 1 && Char.IsWhiteSpace(value[value.Length - 1]) && Char.IsWhiteSpace(value[value.Length - 2])) throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
+				value = value.Trim(); // better to use without whitespaces
+
 
 				return new HeaderField(name, value);
 			}
