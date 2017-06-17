@@ -8,14 +8,14 @@
 		}
 
 		/// <summary>
-		/// Removes all leading and trailing occurences of the specified string
+		/// Removes one leading and trailing occurence of the specified string
 		/// </summary>
 		public static string Trim(this string me, string trimString, StringComparison comparisonType)
 		{
 			return me.TrimStart(trimString, comparisonType).TrimEnd(trimString, comparisonType);
 		}
 		/// <summary>
-		/// Removes all leading occurences of the specified string
+		/// Removes one leading occurence of the specified string
 		/// </summary>
 		public static string TrimStart(this string me, string trimString, StringComparison comparisonType)
 		{
@@ -26,7 +26,7 @@
 			return me;
 		}
 		/// <summary>
-		/// Removes all trailing occurences of the specified string
+		/// Removes one trailing occurence of the specified string
 		/// </summary>
 		public static string TrimEnd(this string me, string trimString, StringComparison comparisonType)
 		{

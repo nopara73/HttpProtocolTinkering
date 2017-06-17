@@ -26,10 +26,10 @@ namespace System.Net.Http
 
 				if (message.Headers != "")
 				{
-					foreach (var headerLine in message.Headers.Split(CRLF, StringSplitOptions.RemoveEmptyEntries))
+					var headers = HeaderSection.FromString(message.Headers);
+					foreach(var header in headers.ToHttpResponseHeaders())
 					{
-						var headerLineParts = headerLine.Split(":", StringSplitOptions.RemoveEmptyEntries);
-						response.Headers.Add(headerLineParts[0].Trim(), headerLineParts[1].Trim());
+						response.Headers.Add(header.Key, header.Value);
 					}
 				}
 
@@ -53,7 +53,8 @@ namespace System.Net.Http
 			string headers = "";
 			if(me.Headers != null && me.Headers.Count() != 0)
 			{
-				headers = me.Headers.ToString();
+				var headerSection = HeaderSection.FromHttpHeaders(me.Headers);
+				headers = headerSection.ToString(endWithCRLF: true);
 			}
 
 			string body = "";

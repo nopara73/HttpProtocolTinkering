@@ -67,13 +67,13 @@ namespace HttpProtocolTinkering.Common
 			{
 				// Read until the first CRLF
 				// the CRLF is part of the startLine
-				var startLine = await reader.ReadLineAsync(CRLF: true).ConfigureAwait(false) + CRLF;
+				var startLine = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false) + CRLF;
 
 				var headers = "";
 				var firstRead = true;
 				while (true)
 				{
-					var header = await reader.ReadLineAsync(CRLF: true).ConfigureAwait(false);
+					var header = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false);
 					if (header == null) throw new FormatException($"Malformed {nameof(HttpMessage)}: End of headers must be CRLF");
 					if (header == "")
 					{

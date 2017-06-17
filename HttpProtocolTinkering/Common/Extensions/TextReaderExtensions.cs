@@ -14,9 +14,9 @@ namespace System.IO
 		// contain the terminating carriage return and/or line feed. The returned
 		// value is null if the end of the input stream has been reached.
 		// If CRLF is true, the line ends only at ("\r\n").
-		public static string ReadLine(this TextReader me, bool CRLF = false)
+		public static string ReadLine(this TextReader me, bool strictCRLF = false)
 		{
-			if (CRLF == false)
+			if (strictCRLF == false)
 			{
 				return me.ReadLine();
 			}
@@ -42,11 +42,11 @@ namespace System.IO
 			return null;
 		}
 
-		public static Task<string> ReadLineAsync(this TextReader me, bool CRLF = false)
+		public static Task<string> ReadLineAsync(this TextReader me, bool strictCRLF = false)
 		{
 			return Task<String>.Factory.StartNew(state =>
 			{
-				return ((TextReader)state).ReadLine(CRLF);
+				return ((TextReader)state).ReadLine(strictCRLF);
 			},
 			me, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 		}
