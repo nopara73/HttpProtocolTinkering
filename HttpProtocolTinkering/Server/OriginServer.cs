@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Net;
 using System.Threading.Tasks;
+using System;
 
 namespace HttpProtocolTinkering.Server
 {
@@ -63,7 +64,7 @@ namespace HttpProtocolTinkering.Server
 
 				return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
 			}
-			catch
+			catch(Exception ex)
 			{
 				return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
 			}

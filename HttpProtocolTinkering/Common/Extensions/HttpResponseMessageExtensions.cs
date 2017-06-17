@@ -17,33 +17,26 @@ namespace System.Net.Http
 			// determine if a message body is expected.If a message body has been
 			// indicated, then it is read as a stream until an amount of octets
 			// equal to the message body length is read or the connection is closed.
-			try
-			{
-				var message = await HttpMessage.FromStringAsync(responseString).ConfigureAwait(false);
-				var statusLine = StatusLine.FromString(message.StartLine);
+			var message = await HttpMessage.FromStringAsync(responseString).ConfigureAwait(false);
+			var statusLine = StatusLine.FromString(message.StartLine);
 				
-				var response = new HttpResponseMessage(statusLine.StatusCode);
+			var response = new HttpResponseMessage(statusLine.StatusCode);
 
-				if (message.Headers != "")
-				{
-					var headers = HeaderSection.FromString(message.Headers);
-					foreach(var header in headers.ToHttpResponseHeaders())
-					{
-						response.Headers.Add(header.Key, header.Value);
-					}
-				}
-
-				if (message.Body != "")
-				{
-					response.Content = new StringContent(message.Body);
-				}
-
-				return response;
-			}
-			catch (Exception ex)
+			if (message.Headers != "")
 			{
-				throw new NotSupportedException($"Invalid {nameof(HttpResponseMessage)}", ex);
+				var headers = HeaderSection.FromString(message.Headers);
+				foreach(var header in headers.ToHttpResponseHeaders())
+				{
+					response.Headers.TryAddWithoutValidation(header.Key, header.Value);
+				}
 			}
+
+			if (message.Body != "")
+			{
+				response.Content = new StringContent(message.Body);
+			}
+
+			return response;
 		}
 
 		public static async Task<string> ToHttpStringAsync(this HttpResponseMessage me)
@@ -54,7 +47,7 @@ namespace System.Net.Http
 			if(me.Headers != null && me.Headers.Count() != 0)
 			{
 				var headerSection = HeaderSection.FromHttpHeaders(me.Headers);
-				headers = headerSection.ToString(endWithCRLF: true);
+				headers = headerSection.ToString(endWithTwoCRLF: true);
 			}
 
 			string body = "";

@@ -49,7 +49,7 @@ namespace HttpProtocolTinkering.Common
 				var value = reader.ReadToEnd();
 
 				// if there's no value
-				if (value == null || value.Trim() == "") throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
+				if (value == null) value = "";
 				// if it starts with more than one whitespace
 				if (value.Length > 1 && Char.IsWhiteSpace(value[0]) && Char.IsWhiteSpace(value[1])) throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
 				// if it ends with more than one whitespace

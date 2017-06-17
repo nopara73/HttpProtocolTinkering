@@ -45,6 +45,10 @@ namespace HttpProtocolTinkering.Common
 			{
 				Headers += CRLF;
 			}
+			if (headers.EndsWith(CRLF + CRLF))
+			{
+				Headers.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase);
+			}
 
 			Body = body;
 			if (body == null || body == "")
@@ -91,10 +95,10 @@ namespace HttpProtocolTinkering.Common
 						{
 							throw new FormatException($"Invalid {nameof(HttpMessage)}: Cannot be whitespace between the start line and the headers");
 						}
+						firstRead = false;
 					}
 
 					headers += header + CRLF; // CRLF is part of the headerstring
-					firstRead = false;
 				}
 
 				// the rest is body

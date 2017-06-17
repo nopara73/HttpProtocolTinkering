@@ -19,18 +19,26 @@ namespace HttpProtocolTinkering.Client
 			request.Version = Protocol.Version;
 
 			var requestString = await request.ToHttpStringAsync().ConfigureAwait(false);
-			
-			WriteLine();
-			WriteLine("Sending request:");
-			WriteLine(requestString);
+
+			WriteLine("SENDING REQUEST...");
+			Write(requestString);
+			if (request.Content != null && await request.Content.ReadAsStringAsync().ConfigureAwait(false) != "")
+			{
+				WriteLine();
+			}
+			WriteLine("-------------------");
 
 			var responseString = await originServer.AcceptRequestAsync(requestString).ConfigureAwait(false);
 
-			WriteLine();
-			WriteLine("Response arrived:");
-			WriteLine(responseString);
-
 			var response = await new HttpResponseMessage().FromStringAsync(responseString).ConfigureAwait(false);
+
+			WriteLine("ARRIVING RESPONSE...");
+			Write(responseString);
+			if (response.Content != null && await response.Content.ReadAsStringAsync().ConfigureAwait(false) != "")
+			{
+				WriteLine();
+			}
+			WriteLine("-------------------");
 
 			if (response.Version.Major != request.Version.Major)
 			{

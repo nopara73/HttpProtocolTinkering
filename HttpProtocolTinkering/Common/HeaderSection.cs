@@ -13,14 +13,14 @@ namespace HttpProtocolTinkering.Common
     {
 		public List<HeaderField> Fields { get; private set; } = new List<HeaderField>();
 
-		public string ToString(bool endWithCRLF)
+		public string ToString(bool endWithTwoCRLF)
 		{
 			StringBuilder sb = new StringBuilder();
 			foreach(var field in Fields)
 			{
-				sb.Append(field.ToString(true));
+				sb.Append(field.ToString(endWithCRLF: true));
 			}
-			if(endWithCRLF)
+			if(endWithTwoCRLF)
 			{
 				sb.Append(CRLF);
 			}
@@ -28,7 +28,7 @@ namespace HttpProtocolTinkering.Common
 		}
 		public override string ToString()
 		{
-			return ToString(true);
+			return ToString(false);
 		}
 		public static HeaderSection FromString(string headersString)
 		{
@@ -40,11 +40,17 @@ namespace HttpProtocolTinkering.Common
 
 			using (var reader = new StringReader(headersString))
 			{
-				var field = "";
-				while (field != null)
+				while (true)
 				{
-					field = reader.ReadLine(strictCRLF: true);
-					hs.Fields.Add(HeaderField.FromString(field));
+					var field = reader.ReadLine(strictCRLF: true);
+					if (field == null)
+					{
+						break;
+					}
+					else
+					{
+						hs.Fields.Add(HeaderField.FromString(field));
+					}
 				}
 				return hs;
 			}
@@ -55,7 +61,7 @@ namespace HttpProtocolTinkering.Common
 			var message = new HttpRequestMessage();
 			foreach(var field in Fields)
 			{
-				message.Headers.Add(field.Name, field.Value);
+				message.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
 			return message.Headers;
 		}
@@ -64,7 +70,7 @@ namespace HttpProtocolTinkering.Common
 			var message = new HttpResponseMessage();
 			foreach (var field in Fields)
 			{
-				message.Headers.Add(field.Name, field.Value);
+				message.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
 			return message.Headers;
 		}
@@ -73,7 +79,7 @@ namespace HttpProtocolTinkering.Common
 			var message = new HttpRequestMessage();
 			foreach (var field in Fields)
 			{
-				message.Content.Headers.Add(field.Name, field.Value);
+				message.Content.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
 			return message.Content.Headers;
 		}
@@ -84,7 +90,7 @@ namespace HttpProtocolTinkering.Common
 			var message = new HttpRequestMessage();
 			foreach (var header in headers)
 			{
-				hs.Fields.Add(new HeaderField(header.Key, header.Value.ToString()));
+				hs.Fields.Add(new HeaderField(header.Key, String.Join(",", header.Value)));
 			}
 			return hs;
 		}
