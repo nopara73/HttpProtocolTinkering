@@ -58,32 +58,45 @@ namespace HttpProtocolTinkering.Common
 			}
 		}
 
-		public HttpRequestHeaders ToHttpRequestHeaders()
+		public HttpRequestContentHeaders ToHttpRequestHeaders()
 		{
-			var message = new HttpRequestMessage();
-			foreach(var field in Fields)
+			var message = new HttpRequestMessage()
 			{
-				message.Headers.TryAddWithoutValidation(field.Name, field.Value);
-			}
-			return message.Headers;
-		}
-		public HttpResponseHeaders ToHttpResponseHeaders()
-		{
-			var message = new HttpResponseMessage();
+				Content = new ByteArrayContent(new byte[] { })
+			};
 			foreach (var field in Fields)
 			{
-				message.Headers.TryAddWithoutValidation(field.Name, field.Value);
+				if (field.Name.StartsWith("Content-", StringComparison.Ordinal))
+				{
+					message.Content.Headers.TryAddWithoutValidation(field.Name, field.Value);
+				}
+				else message.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
-			return message.Headers;
+			return new HttpRequestContentHeaders
+			{
+				RequestHeaders = message.Headers,
+				ContentHeaders = message.Content.Headers
+			};
 		}
-		public HttpContentHeaders ToHttpContentHeaders()
+		public HttpResponseContentHeaders ToHttpResponseHeaders()
 		{
-			var message = new HttpRequestMessage();
+			var message = new HttpResponseMessage()
+			{
+				Content = new ByteArrayContent(new byte[] { })
+			};
 			foreach (var field in Fields)
 			{
-				message.Content.Headers.TryAddWithoutValidation(field.Name, field.Value);
+				if(field.Name.StartsWith("Content-", StringComparison.Ordinal))
+				{
+					message.Content.Headers.TryAddWithoutValidation(field.Name, field.Value);
+				}
+				else message.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
-			return message.Content.Headers;
+			return new HttpResponseContentHeaders
+			{
+				ResponseHeaders = message.Headers,
+				ContentHeaders = message.Content.Headers
+			};
 		}
 
 		public static HeaderSection FromHttpHeaders(HttpHeaders headers)

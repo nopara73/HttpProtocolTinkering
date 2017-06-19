@@ -24,9 +24,9 @@ namespace HttpProtocolTinkering.Common
     {
 		public string StartLine { get; set; }
 		public string Headers { get; set; }
-		public string Body { get; set; }
+		public string MessageBody { get; set; }
 
-		public HttpMessage(string startLine, string headers = "", string body = "")
+		public HttpMessage(string startLine, string headers = "", string messageBody = "")
 		{
 			if (startLine == null || startLine == "") throw new FormatException($"{nameof(startLine)} cannot be null or empty");
 
@@ -47,19 +47,19 @@ namespace HttpProtocolTinkering.Common
 			}
 			if (headers.EndsWith(CRLF + CRLF))
 			{
-				Headers.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase);
+				Headers = Headers.TrimEnd(CRLF, StringComparison.OrdinalIgnoreCase);
 			}
 
-			Body = body;
-			if (body == null || body == "")
+			MessageBody = messageBody;
+			if (messageBody == null || messageBody == "")
 			{
-				Body = "";
+				MessageBody = "";
 			}
 		}
 
 		public override string ToString()
 		{
-			return StartLine + Headers + CRLF + Body;
+			return StartLine + Headers + CRLF + MessageBody;
 		}
 		
 		public static async Task<HttpMessage> FromStringAsync(string message)
@@ -102,9 +102,9 @@ namespace HttpProtocolTinkering.Common
 				}
 
 				// the rest is body
-				var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+				var messageBody = await reader.ReadToEndAsync().ConfigureAwait(false);
 
-				return new HttpMessage(startLine, headers, body);
+				return new HttpMessage(startLine, headers, messageBody);
 			}
 		}
 	}

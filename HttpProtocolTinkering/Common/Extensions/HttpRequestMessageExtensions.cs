@@ -22,18 +22,20 @@ namespace System.Net.Http
 
 			var request = new HttpRequestMessage(requestLine.Method, requestLine.URI);
 
-			if (message.Headers != "")
+			var headerSection = HeaderSection.FromString(message.Headers);
+			var headerStruct = headerSection.ToHttpRequestHeaders();
+			if (headerStruct.RequestHeaders != null)
 			{
-				var headerSection = HeaderSection.FromString(message.Headers);
-				foreach (var header in headerSection.ToHttpRequestHeaders())
+				foreach (var header in headerStruct.RequestHeaders)
 				{
 					request.Headers.TryAddWithoutValidation(header.Key, header.Value);
 				}
 			}
 
-			if (message.Body != "")
+			var messageBody = new MessageBody(message.MessageBody, request.Headers, headerStruct.ContentHeaders);
+			if (messageBody.Present)
 			{
-				request.Content = new StringContent(message.Body);
+				request.Content = messageBody.ToHttpContent();
 			}
 
 			return request;
@@ -46,16 +48,23 @@ namespace System.Net.Http
 			string headers = "";
 			if (me.Headers != null && me.Headers.Count() != 0)
 			{
-				headers = HeaderSection.FromHttpHeaders(me.Headers).ToString(endWithTwoCRLF: false);
-			}
+				var headerSection = HeaderSection.FromHttpHeaders(me.Headers);
+				headers += headerSection.ToString(endWithTwoCRLF: false);
+			}		
 
-			string body = "";
+			string messageBody = "";
 			if (me.Content != null)
 			{
-				body = await me.Content.ReadAsStringAsync().ConfigureAwait(false);
+				if (me.Content.Headers != null && me.Content.Headers.Count() != 0)
+				{
+					var headerSection = HeaderSection.FromHttpHeaders(me.Content.Headers);
+					headers += headerSection.ToString(endWithTwoCRLF: false);
+				}
+
+				messageBody = await me.Content.ReadAsStringAsync().ConfigureAwait(false);
 			}
 
-			return new HttpMessage(startLine, headers, body).ToString();
+			return new HttpMessage(startLine, headers, messageBody).ToString();
 		}
 	}
 }
