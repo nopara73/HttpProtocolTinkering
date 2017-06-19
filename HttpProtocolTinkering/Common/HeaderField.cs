@@ -25,7 +25,7 @@ namespace HttpProtocolTinkering.Common
 			// https://tools.ietf.org/html/rfc7230#section-3.2.4
 			// replace each received obs-fold with one or more SP octets prior to interpreting the field value
 			text = text.Replace(CRLF + SP, SP + SP);
-			text = text.Replace(CRLF + TAB, SP + TAB);
+			text = text.Replace(CRLF + HTAB, SP + HTAB);
 			return text;
 		}
 
@@ -59,6 +59,10 @@ namespace HttpProtocolTinkering.Common
 				var name = reader.ReadPart(':');
 				// if empty
 				if(name == null || name.Trim() == "") throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
+				// https://tools.ietf.org/html/rfc7230#section-3.2.4
+				// No whitespace is allowed between the header field-name and colon.
+				// A proxy MUST remove any such whitespace from a response message before forwarding the message downstream.
+				name = name.TrimEnd();
 				// whitespace not allowed
 				if (name != name.Trim()) throw new FormatException($"Wrong {nameof(HeaderField)}: {fieldString}");
 
