@@ -12,9 +12,9 @@ namespace HttpProtocolTinkering.Client
 			// A sender MUST NOT generate an "http" URI with an empty host identifier.
 			if (request.RequestUri.DnsSafeHost == "") throw new HttpRequestException("Host identifier is empty");
 
-			Proxy intermediary = new Proxy();
+			Proxy proxy = new Proxy();
 
-			var response = await intermediary.SendRequestAsync(originServer, request).ConfigureAwait(false);
+			var response = await proxy.SendRequestAsync(originServer, request).ConfigureAwait(false);
 
 			if(response.Version.Major != request.Version.Major)
 			{
