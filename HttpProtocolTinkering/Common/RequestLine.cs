@@ -33,7 +33,7 @@ namespace HttpProtocolTinkering.Common
 				var uri = new Uri(parts[1]);
 				var protocolString = parts[2];
 				
-				var method = Parsers.ToHttpMethod(methodString);
+				var method = new HttpMethod(methodString);
 				var protocol = new HttpProtocol(protocolString);
 
 				return new RequestLine(method, uri, protocol);
