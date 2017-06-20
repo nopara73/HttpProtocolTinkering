@@ -13,7 +13,7 @@ namespace HttpProtocolTinkering.Common
 		public bool Present { get; private set; }
 
 		public MessageBody(string messageBody, HttpRequestHeaders requestHeaders, HttpContentHeaders contentHeaders)
-			: this(messageBody, requestHeaders.TransferEncoding)
+			: this(messageBody, requestHeaders.TransferEncoding, contentHeaders.ContentLength)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3.3
 			// The presence of a message body in a request is signaled by a
@@ -28,7 +28,7 @@ namespace HttpProtocolTinkering.Common
 		}
 
 		public MessageBody(string messageBody, HttpResponseHeaders responseHeaders, HttpContentHeaders contentHeaders, HttpStatusCode status) 
-			: this(messageBody, responseHeaders.TransferEncoding)
+			: this(messageBody, responseHeaders.TransferEncoding, contentHeaders.ContentLength)
 		{
 			ValidateResponse(messageBody, responseHeaders, status);
 		}
@@ -75,16 +75,25 @@ namespace HttpProtocolTinkering.Common
 			}
 		}
 
-		public MessageBody(string messageBody, HttpHeaderValueCollection<TransferCodingHeaderValue> transferCodings)
+		public MessageBody(string messageBody, HttpHeaderValueCollection<TransferCodingHeaderValue> transferCodings, long? contentLength)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3.3
 			// The message body is
 			// identical to the payload body unless a transfer coding has been applied.
-			if (transferCodings.Count == 0)
+			if (transferCodings.Count == 0 && contentLength != null)
 			{
+				if(messageBody.Length != contentLength)
+				{
+					throw new FormatException("Content length header does not equals the actual content length");
+				}
+
 				PayloadBody = messageBody;
 			}
-			else throw new NotImplementedException();
+			else if(transferCodings.Count > 0 && contentLength == null)
+			{
+				throw new NotImplementedException();
+			}
+			else throw new NotSupportedException("Either the content length or transfer encoding must be set");
 		}
 
 		public HttpContent ToHttpContent()

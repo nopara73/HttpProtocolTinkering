@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using static HttpProtocolTinkering.Common.Constants;
 using System.IO;
+using System.Linq;
 
 namespace HttpProtocolTinkering.Common
 {
@@ -107,6 +108,19 @@ namespace HttpProtocolTinkering.Common
 			{
 				hs.Fields.Add(new HeaderField(header.Key, String.Join(",", header.Value)));
 			}
+
+			// The following else branch is needed as is to avoid the craziest VS2017/.NET Core 1.1 bug I have ever seen!
+			if (headers is HttpContentHeaders)
+			{
+				if (((HttpContentHeaders)headers).ContentLength != null)
+				{
+					if (hs.Fields.All(x => x.Name != "Content-Length"))
+					{
+						hs.Fields.Add(new HeaderField("Content-Length", ((HttpContentHeaders)headers).ContentLength.ToString()));
+					}
+				}
+			}
+
 			return hs;
 		}
 	}
