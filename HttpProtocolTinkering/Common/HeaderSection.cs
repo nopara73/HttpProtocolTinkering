@@ -109,7 +109,7 @@ namespace HttpProtocolTinkering.Common
 				hs.Fields.Add(new HeaderField(header.Key, String.Join(",", header.Value)));
 			}
 
-			// The following else branch is needed as is to avoid the craziest VS2017/.NET Core 1.1 bug I have ever seen!
+			// The following if branch is needed as is to avoid the craziest VS2017/.NET Core 1.1 bug I have ever seen!
 			if (headers is HttpContentHeaders)
 			{
 				if (((HttpContentHeaders)headers).ContentLength != null)
