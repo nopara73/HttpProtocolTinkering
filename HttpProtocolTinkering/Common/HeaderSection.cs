@@ -109,7 +109,11 @@ namespace HttpProtocolTinkering.Common
 				hs.Fields.Add(new HeaderField(header.Key, String.Join(",", header.Value)));
 			}
 
+			// -- Start [SECTION] Crazy VS2017/.NET Core 1.1 bug ---
 			// The following if branch is needed as is to avoid the craziest VS2017/.NET Core 1.1 bug I have ever seen!
+			// If this section is not added the Content-Length header will not be set unless...
+			// - I put a break point at the start of the function
+			// - And I explicitly expand the "headers" variable
 			if (headers is HttpContentHeaders)
 			{
 				if (((HttpContentHeaders)headers).ContentLength != null)
@@ -120,6 +124,7 @@ namespace HttpProtocolTinkering.Common
 					}
 				}
 			}
+			// -- End [SECTION] Crazy VS2017/.NET Core 1.1 bug ---
 
 			return hs;
 		}

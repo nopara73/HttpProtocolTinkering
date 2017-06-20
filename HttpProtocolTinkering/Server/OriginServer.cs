@@ -63,6 +63,23 @@ namespace HttpProtocolTinkering.Server
 					}
 				}
 
+				if (request.Method == HttpMethod.Head)
+				{
+					if (request.RequestUri == uriBuilder.BuildUri("foo"))
+					{
+						// https://tools.ietf.org/html/rfc7230#section-3.3.2
+						// A server MAY send a Content-Length header field in a response to a
+						// HEAD request(Section 4.3.2 of[RFC7231]);
+						// a server MUST NOT send
+						// Content - Length in such a response unless its field-value equals the
+						// decimal number of octets that would have been sent in the payload
+						// body of a response if the same request had used the GET method.
+						response.Content = new ByteArrayContent(new byte[] { }); // dummy empty content
+						response.Content.Headers.ContentLength = new StringContent("bar").Headers.ContentLength;
+						return await response.ToHttpStringAsync().ConfigureAwait(false);
+					}
+				}
+
 				return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
 			}
 			catch(Exception ex)

@@ -34,10 +34,7 @@ namespace System.Net.Http
 			}
 
 			var messageBody = new MessageBody(message.MessageBody, response.Headers, headerStruct.ContentHeaders, statusLine.StatusCode);
-			if (messageBody.Present)
-			{
-				response.Content = messageBody.ToHttpContent();
-			}
+			response.Content = messageBody.ToHttpContent();
 
 			return response;
 		}

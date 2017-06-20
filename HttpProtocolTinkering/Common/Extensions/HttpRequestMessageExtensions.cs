@@ -1,5 +1,6 @@
 ﻿using HttpProtocolTinkering.Common;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using static HttpProtocolTinkering.Common.Constants;
@@ -33,10 +34,7 @@ namespace System.Net.Http
 			}
 
 			var messageBody = new MessageBody(message.MessageBody, request.Headers, headerStruct.ContentHeaders);
-			if (messageBody.Present)
-			{
-				request.Content = messageBody.ToHttpContent();
-			}
+			request.Content = messageBody.ToHttpContent();
 
 			return request;
 		}

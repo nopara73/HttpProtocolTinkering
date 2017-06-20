@@ -2,6 +2,7 @@
 using HttpProtocolTinkering.Common;
 using HttpProtocolTinkering.Server;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using static HttpProtocolTinkering.Common.Constants;
@@ -34,15 +35,20 @@ namespace HttpProtocolTinkering
 
 			userAgent.SendRequestAsync(originServer, wrongRequest).Wait();
 
-			var postRequest = new HttpRequestMessage(HttpMethod.Post, uriBuilder.BuildUri("boo"))
+			var postRequestWithContent = new HttpRequestMessage(HttpMethod.Post, uriBuilder.BuildUri("boo"))
 			{
 				Content = new StringContent("bee")
 			};
-			userAgent.SendRequestAsync(originServer, postRequest).Wait();
+			userAgent.SendRequestAsync(originServer, postRequestWithContent).Wait();
 
 			var headRequest = new HttpRequestMessage(HttpMethod.Head, uriBuilder.BuildUri("foo"));
 			userAgent.SendRequestAsync(originServer, headRequest).Wait();
 
+			var postRequestWithOut = new HttpRequestMessage(HttpMethod.Post, uriBuilder.BuildUri("boo"))
+			{
+				Content = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("foo", "bar") })
+			};
+			userAgent.SendRequestAsync(originServer, postRequestWithContent).Wait();
 
 			ReadKey();
         }

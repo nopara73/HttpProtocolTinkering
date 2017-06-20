@@ -32,6 +32,35 @@ namespace HttpProtocolTinkering.Client
 			// in forwarded messages.
 			request.Version = Protocol.Version;
 
+			// https://tools.ietf.org/html/rfc7230#section-3.3.2
+			// A user agent SHOULD send a Content - Length in a request message when
+			// no Transfer-Encoding is sent and the request method defines a meaning
+			// for an enclosed payload body.For example, a Content - Length header
+			// field is normally sent in a POST request even when the value is 0
+			// (indicating an empty payload body).A user agent SHOULD NOT send a
+			// Content - Length header field when the request message does not contain
+			// a payload body and the method semantics do not anticipate such a
+			// body.
+			// TODO implement it fully (altough probably .NET already ensures it)
+			if(request.Method == HttpMethod.Post)
+			{
+				if (request.Headers.TransferEncoding.Count == 0)
+				{
+					if (request.Content == null)
+					{
+						request.Content = new ByteArrayContent(new byte[] { }); // dummy empty content
+						request.Content.Headers.ContentLength = 0;
+					}
+					else
+					{
+						if (request.Content.Headers.ContentLength == null)
+						{
+							request.Content.Headers.ContentLength = (await request.Content.ReadAsStringAsync().ConfigureAwait(false)).Length;
+						}
+					}
+				}
+			}
+
 			var requestString = await request.ToHttpStringAsync().ConfigureAwait(false);
 
 			WriteLine("SENDING REQUEST...");
@@ -49,7 +78,7 @@ namespace HttpProtocolTinkering.Client
 			ValidateResponse(request, response);
 
 			WriteLine("ARRIVING RESPONSE...");
-			Write(responseString);
+			Write(await response.ToHttpStringAsync().ConfigureAwait(false));
 			if (response.Content != null && await response.Content.ReadAsStringAsync().ConfigureAwait(false) != "")
 			{
 				WriteLine();
