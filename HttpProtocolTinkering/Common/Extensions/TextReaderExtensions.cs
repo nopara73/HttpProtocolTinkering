@@ -27,7 +27,7 @@ namespace System.IO
 				int ch = me.Read();
 				if (ch == -1) break;
 
-				if (ch == '\n' && me.Peek() == '\r')
+				if (ch == '\r' && me.Peek() == '\n')
 				{
 					me.Read();
 					return sb.ToString();

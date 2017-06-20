@@ -10,7 +10,7 @@ namespace HttpProtocolTinkering.Common
     public class MessageBody
     {
 		public string PayloadBody { get; }
-		public bool Present { get; }
+		public bool Present { get; private set; }
 
 		public MessageBody(string messageBody, HttpRequestHeaders requestHeaders, HttpContentHeaders contentHeaders)
 			: this(messageBody, requestHeaders.TransferEncoding)
@@ -30,23 +30,22 @@ namespace HttpProtocolTinkering.Common
 		public MessageBody(string messageBody, HttpResponseHeaders responseHeaders, HttpContentHeaders contentHeaders, HttpStatusCode status) 
 			: this(messageBody, responseHeaders.TransferEncoding)
 		{
+			ValidateResponse(messageBody, responseHeaders, status);
+		}
+
+		private void ValidateResponse(string messageBody, HttpResponseHeaders responseHeaders, HttpStatusCode status)
+		{
 			// https://tools.ietf.org/html/rfc7230#section-3.3
 			// The presence of a message body in a response depends on both the
 			// request method to which it is responding and the response status code
-			// (Section 3.1.2).  Responses to the HEAD request method(Section 4.3.2
-			// of[RFC7231]) never include a message body because the associated
-			// response header fields(e.g., Transfer - Encoding, Content - Length,
-			// etc.), if present, indicate only what their values would have been if
-			// the request method had been GET(Section 4.3.1 of[RFC7231]). 2xx
-			// (Successful) responses to a CONNECT request method(Section 4.3.6 of
-			// [RFC7231]) switch to tunnel mode instead of having a message body.
+			// (Section 3.1.2). 
 			// All 1xx(Informational), 204(No Content), and 304(Not Modified)
 			// responses do not include a message body.  All other responses do
 			// include a message body, although the body might be of zero length.
 			if (messageBody != null && messageBody != "")
 			{
 				Present = true;
-				if (((int)status).ToString()[0] == '1')
+				if (HttpStatusCodeHelper.IsInformational(status))
 				{
 					throw new HttpRequestException("Response with 1xx status code cannot include message body");
 				}
@@ -60,6 +59,20 @@ namespace HttpProtocolTinkering.Common
 				}
 			}
 			else Present = false;
+			// https://tools.ietf.org/html/rfc7230#section-3.3.1
+			//  A server MUST NOT send a Transfer - Encoding header field in any
+			//  response with a status code of 1xx(Informational) or 204(No Content).
+			if (responseHeaders.Contains("Transfer-Encoding"))
+			{
+				if (HttpStatusCodeHelper.IsInformational(status))
+				{
+					throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any response with a status code of 1xx(Informational)");
+				}
+				if (status == HttpStatusCode.NoContent)
+				{
+					throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any response with a status code of 204(No Content)");
+				}
+			}
 		}
 
 		public MessageBody(string messageBody, HttpHeaderValueCollection<TransferCodingHeaderValue> transferCodings)

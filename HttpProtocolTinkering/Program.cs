@@ -4,6 +4,7 @@ using HttpProtocolTinkering.Server;
 using System;
 using System.Net;
 using System.Net.Http;
+using static HttpProtocolTinkering.Common.Constants;
 using static System.Console;
 
 namespace HttpProtocolTinkering
@@ -20,7 +21,7 @@ namespace HttpProtocolTinkering
 			var requestLine = new RequestLine(HttpMethod.Get, uriBuilder.BuildUri("foo"), HttpProtocol.HTTP11);
 			var request = new HttpRequestMessage(requestLine.Method, requestLine.URI);
 
-			request.Headers.TryAddWithoutValidation("moo", "mee\n\r obsfolded");
+			request.Headers.TryAddWithoutValidation("moo", $"mee{CRLF} obsfolded");
 			request.Headers.TryAddWithoutValidation("boo", "");
 			request.Headers.TryAddWithoutValidation("soo", new string[] { "oo","koo"});
 			request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5 (.NET CLR 3.5.30729) ");

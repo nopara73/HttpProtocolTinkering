@@ -46,7 +46,7 @@ namespace HttpProtocolTinkering.Client
 
 			var response = await new HttpResponseMessage().FromStringAsync(responseString).ConfigureAwait(false);
 
-			AssertNoMessageBodyWhenAppropriate(request, response);
+			ValidateResponse(request, response);
 
 			WriteLine("ARRIVING RESPONSE...");
 			Write(responseString);
@@ -64,7 +64,7 @@ namespace HttpProtocolTinkering.Client
 			return response;
 		}
 
-		private static void AssertNoMessageBodyWhenAppropriate(HttpRequestMessage request, HttpResponseMessage response)
+		private static void ValidateResponse(HttpRequestMessage request, HttpResponseMessage response)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3.3
 			// The presence of a message body in a response depends on both the
@@ -76,9 +76,6 @@ namespace HttpProtocolTinkering.Client
 			// the request method had been GET(Section 4.3.1 of[RFC7231]). 2xx
 			// (Successful) responses to a CONNECT request method(Section 4.3.6 of
 			// [RFC7231]) switch to tunnel mode instead of having a message body.
-			// All 1xx(Informational), 204(No Content), and 304(Not Modified)
-			// responses do not include a message body.  All other responses do
-			// include a message body, although the body might be of zero length.
 			if (response.Content != null && response.Content.ReadAsStringAsync().Result != "")
 			{
 				if (request.Method == HttpMethod.Head)
@@ -87,22 +84,25 @@ namespace HttpProtocolTinkering.Client
 				}
 				if (request.Method == new HttpMethod("CONNECT"))
 				{
-					if (((int)response.StatusCode).ToString()[0] == '2')
+					if (HttpStatusCodeHelper.IsSuccessful(response.StatusCode))
 					{
 						throw new HttpRequestException("Response to CONNECT method with 2xx status code cannot include message body");
 					}
 				}
-				if (((int)response.StatusCode).ToString()[0] == '1')
+			}
+
+			// https://tools.ietf.org/html/rfc7230#section-3.3.1
+			// A server MUST NOT send a Transfer - Encoding header field in
+			// any 2xx(Successful) response to a CONNECT request(Section 4.3.6 of
+			// [RFC7231]).
+			if (request.Method == new HttpMethod("CONNECT"))
+			{
+				if (response.Headers.Contains("Transfer-Encoding"))
 				{
-					throw new HttpRequestException("Response with 1xx status code cannot include message body");
-				}
-				if (response.StatusCode == HttpStatusCode.NoContent)
-				{
-					throw new HttpRequestException("Response with 204 status code cannot include message body");
-				}
-				if (response.StatusCode == HttpStatusCode.NotModified)
-				{
-					throw new HttpRequestException("Response with 304 status code cannot include message body");
+					if (HttpStatusCodeHelper.IsSuccessful(response.StatusCode))
+					{
+						throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any 2xx(Successful) response to a CONNECT request");
+					}
 				}
 			}
 		}

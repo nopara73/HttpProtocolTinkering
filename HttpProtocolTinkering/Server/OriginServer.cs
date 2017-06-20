@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net;
 using System.Threading.Tasks;
 using System;
+using System.IO;
 
 namespace HttpProtocolTinkering.Server
 {
