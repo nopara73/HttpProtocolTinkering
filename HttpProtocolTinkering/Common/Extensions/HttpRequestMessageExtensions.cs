@@ -68,8 +68,19 @@ namespace System.Net.Http
 					// identical to the payload body unless a transfer coding has been applied.
 					if (headerStruct.RequestHeaders.TransferEncoding.Count == 0)
 					{
-						if (contentLength == null) throw new NotImplementedException();
-						request.Content = new StreamContent(new SubStream(reader.BaseStream, position, (int)contentLength));
+						if (contentLength == null)
+						{
+							// If didn't get content lenght guess it
+							// https://tools.ietf.org/html/rfc7230#section-3.3.2
+							// Aside from the cases defined above, in the absence of
+							// Transfer - Encoding, an origin server SHOULD send a Content - Length
+							// header field when the payload body size is known prior to sending the
+							// complete header section.  This will allow downstream recipients to
+							// measure transfer progress, know when a received message is complete,
+							// and potentially reuse the connection for additional requests.
+							request.Content = new StreamContent(new SubStream(reader.BaseStream, position, reader.BaseStream.Length - position));
+						}
+						request.Content = new StreamContent(new SubStream(reader.BaseStream, position, (long)contentLength));
 					}
 					else
 					{

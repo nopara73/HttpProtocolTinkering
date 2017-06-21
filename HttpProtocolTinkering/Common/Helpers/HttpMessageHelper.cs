@@ -65,7 +65,7 @@ namespace System.Net.Http
 			return headers;
 		}
 
-		public static void AssertValidResponse(bool hasMessageBody, HttpResponseHeaders responseHeaders, HttpStatusCode statusCode, HttpMethod requestMethod)
+		public static void AssertValidResponse(bool hasMessageBody, HttpResponseHeaders responseHeaders, HttpContentHeaders contentHeaders, HttpStatusCode statusCode, HttpMethod requestMethod)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3.3
 			// The presence of a message body in a response depends on both the
@@ -109,33 +109,47 @@ namespace System.Net.Http
 			}
 
 			// https://tools.ietf.org/html/rfc7230#section-3.3.1
-			// A server MUST NOT send a Transfer - Encoding header field in any
-			// response with a status code of 1xx(Informational) or 204(No Content)
-			if (responseHeaders.Contains("Transfer-Encoding"))
+			// A server MUST NOT send a Transfer-Encoding header field in any
+			// response with a status code of 1xx(Informational) or 204(No Content).
+			// https://tools.ietf.org/html/rfc7230#section-3.3.2
+			// A server MUST NOT send a Content-Length header field in any
+			// response with a status code of 1xx(Informational) or 204(No Content).
+			if (responseHeaders.Contains("Transfer-Encoding") || contentHeaders.Contains("Content-Length"))
 			{
 				if (HttpStatusCodeHelper.IsInformational(statusCode))
 				{
-					throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any response with a status code of 1xx(Informational)");
+					throw new HttpRequestException("A server MUST NOT send a Transfer-Encoding or Content-Length header fields in any response with a status code of 1xx(Informational)");
 				}
 				if (statusCode == HttpStatusCode.NoContent)
 				{
-					throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any response with a status code of 204(No Content)");
+					throw new HttpRequestException("A server MUST NOT send a Transfer-Encoding or Content-Length header fields in any response with a status code of 204(No Content)");
 				}
 			}
 
 			// https://tools.ietf.org/html/rfc7230#section-3.3.1
-			// A server MUST NOT send a Transfer - Encoding header field in
-			// any 2xx(Successful) response to a CONNECT request(Section 4.3.6 of
+			// A server MUST NOT send a Transfer-Encoding header field in any 2xx
+			// (Successful) response to a CONNECT request(Section 4.3.6 of
+			// [RFC7231]).
+			// https://tools.ietf.org/html/rfc7230#section-3.3.2
+			// A server MUST NOT send a Content-Length header field in any 2xx
+			// (Successful) response to a CONNECT request(Section 4.3.6 of
 			// [RFC7231]).
 			if (requestMethod == new HttpMethod("CONNECT"))
 			{
-				if (responseHeaders.Contains("Transfer-Encoding"))
+				if (responseHeaders.Contains("Transfer-Encoding") || contentHeaders.Contains("Content-Length"))
 				{
 					if (HttpStatusCodeHelper.IsSuccessful(statusCode))
 					{
-						throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any 2xx(Successful) response to a CONNECT request");
+						throw new HttpRequestException("A server MUST NOT send a Transfer-Encoding or Content-Length header fields in any 2xx(Successful) response to a CONNECT request");
 					}
 				}
+			}
+
+			// Any Content-Length field value greater than or equal to zero is valid.
+			if (contentHeaders.Contains("Content-Length"))
+			{
+				if (contentHeaders.ContentLength < 0)
+					throw new HttpRequestException("Content-Length MUST be bigger than zero");
 			}
 		}
 

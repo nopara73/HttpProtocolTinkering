@@ -44,9 +44,9 @@ namespace System.Net.Http
 			var headerSection = HeaderSection.CreateNew(headers);
 			var headerStruct = headerSection.ToHttpResponseHeaders();
 			HttpMessageHelper.CopyHeaders(headerStruct.ResponseHeaders, response.Headers);
-
+			
 			var hasMessageBody = reader.Peek() != -1;
-			HttpMessageHelper.AssertValidResponse(hasMessageBody, headerStruct.ResponseHeaders, statusLine.StatusCode, requestMethod);
+			HttpMessageHelper.AssertValidResponse(hasMessageBody, headerStruct.ResponseHeaders, headerStruct.ContentHeaders, statusLine.StatusCode, requestMethod);
 			long? contentLength = headerStruct.ContentHeaders?.ContentLength;
 			
 			if (hasMessageBody)
@@ -56,8 +56,19 @@ namespace System.Net.Http
 				// identical to the payload body unless a transfer coding has been applied.
 				if (headerStruct.ResponseHeaders.TransferEncoding.Count == 0)
 				{
-					if (contentLength == null) throw new NotImplementedException();
-					response.Content = new StreamContent(new SubStream(reader.BaseStream, position, (int)contentLength));
+					if (contentLength == null)
+					{
+						// If didn't get content lenght guess it
+						// https://tools.ietf.org/html/rfc7230#section-3.3.2
+						// Aside from the cases defined above, in the absence of
+						// Transfer - Encoding, an origin server SHOULD send a Content - Length
+						// header field when the payload body size is known prior to sending the
+						// complete header section.  This will allow downstream recipients to
+						// measure transfer progress, know when a received message is complete,
+						// and potentially reuse the connection for additional requests.
+						response.Content = new StreamContent(new SubStream(reader.BaseStream, position, reader.BaseStream.Length - position));
+					}
+					else response.Content = new StreamContent(new SubStream(reader.BaseStream, position, (long)contentLength));
 				}
 				else
 				{
