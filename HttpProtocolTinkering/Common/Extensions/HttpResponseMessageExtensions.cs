@@ -1,5 +1,6 @@
 ﻿using HttpProtocolTinkering.Common;
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ namespace System.Net.Http
 {
     public static class HttpResponseMessageExtensions
     {
-		public static async Task<HttpResponseMessage> FromStringAsync(this HttpResponseMessage me, string responseString)
+		public static async Task<HttpResponseMessage> FromStreamAsync(this HttpResponseMessage me, Stream responseString)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// The normal procedure for parsing an HTTP message is to read the
@@ -18,7 +19,7 @@ namespace System.Net.Http
 			// determine if a message body is expected.If a message body has been
 			// indicated, then it is read as a stream until an amount of octets
 			// equal to the message body length is read or the connection is closed.
-			var message = await HttpMessage.FromStringAsync(responseString).ConfigureAwait(false);
+			var message = await HttpMessage.FromStreamAsync(responseString).ConfigureAwait(false);
 			var statusLine = StatusLine.FromString(message.StartLine);
 				
 			var response = new HttpResponseMessage(statusLine.StatusCode);
@@ -39,17 +40,21 @@ namespace System.Net.Http
 			return response;
 		}
 
+		public static async Task<Stream> ToStreamAsync(this HttpResponseMessage me)
+		{
+			return new MemoryStream(Encoding.UTF8.GetBytes(await me.ToHttpStringAsync().ConfigureAwait(false)));
+		}
 		public static async Task<string> ToHttpStringAsync(this HttpResponseMessage me)
 		{
 			var startLine = new StatusLine(new HttpProtocol($"HTTP/{me.Version.Major}.{me.Version.Minor}"), me.StatusCode).ToString();
 
 			string headers = "";
-			if(me.Headers != null && me.Headers.Count() != 0)
+			if (me.Headers != null && me.Headers.Count() != 0)
 			{
 				var headerSection = HeaderSection.FromHttpHeaders(me.Headers);
 				headers += headerSection.ToString(endWithTwoCRLF: false);
 			}
-			
+
 			string messageBody = "";
 			if (me.Content != null)
 			{
@@ -62,7 +67,7 @@ namespace System.Net.Http
 				messageBody = await me.Content.ReadAsStringAsync().ConfigureAwait(false);
 			}
 
-			return new HttpMessage(startLine, headers, messageBody).ToString();			
+			return new HttpMessage(startLine, headers, messageBody).ToString();
 		}
 	}
 }

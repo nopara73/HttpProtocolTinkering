@@ -15,7 +15,7 @@ namespace HttpProtocolTinkering.Server
 		// support, at a minimum, request-line lengths of 8000 octets.
 		public int UriLength = 8190; // This is the default at Apache, let's use this
 
-		public async Task<string> AcceptRequestAsync(string requestString)
+		public async Task<Stream> AcceptRequestAsync(string requestString)
 		{
 			var responseBadRequest = new HttpResponseMessage(HttpStatusCode.BadRequest);
 			try
@@ -33,14 +33,14 @@ namespace HttpProtocolTinkering.Server
 				// to refuse service of the client's major protocol version.			
 				if (request.Version.Major != protocol.Version.Major)
 				{
-					return await new HttpResponseMessage(HttpStatusCode.HttpVersionNotSupported).ToHttpStringAsync().ConfigureAwait(false);
+					return await new HttpResponseMessage(HttpStatusCode.HttpVersionNotSupported).ToStreamAsync().ConfigureAwait(false);
 				}
 
 				// https://tools.ietf.org/html/rfc7230#section-2.7.1
 				// A recipient that processes such a URI reference [without hostname] MUST reject it as invalid.
 				if (request.RequestUri.DnsSafeHost == "")
 				{
-					return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
+					return await responseBadRequest.ToStreamAsync().ConfigureAwait(false);
 				}
 
 				// https://tools.ietf.org/html/rfc7230#section-3.1.1
@@ -48,7 +48,7 @@ namespace HttpProtocolTinkering.Server
 				// with a 414(URI Too Long) status code
 				if (request.RequestUri.ToString().Length > UriLength)
 				{
-					return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
+					return await responseBadRequest.ToStreamAsync().ConfigureAwait(false);
 				}
 
 				var response = new HttpResponseMessage(HttpStatusCode.OK);
@@ -59,7 +59,7 @@ namespace HttpProtocolTinkering.Server
 					if (request.RequestUri == uriBuilder.BuildUri("foo"))
 					{
 						response.Content = new StringContent("bar");
-						return await response.ToHttpStringAsync().ConfigureAwait(false);
+						return await response.ToStreamAsync().ConfigureAwait(false);
 					}
 				}
 
@@ -76,15 +76,15 @@ namespace HttpProtocolTinkering.Server
 						// body of a response if the same request had used the GET method.
 						response.Content = new ByteArrayContent(new byte[] { }); // dummy empty content
 						response.Content.Headers.ContentLength = new StringContent("bar").Headers.ContentLength;
-						return await response.ToHttpStringAsync().ConfigureAwait(false);
+						return await response.ToStreamAsync().ConfigureAwait(false);
 					}
 				}
 
-				return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
+				return await responseBadRequest.ToStreamAsync().ConfigureAwait(false);
 			}
 			catch(Exception ex)
 			{
-				return await responseBadRequest.ToHttpStringAsync().ConfigureAwait(false);
+				return await responseBadRequest.ToStreamAsync().ConfigureAwait(false);
 			}
 		}
 	}

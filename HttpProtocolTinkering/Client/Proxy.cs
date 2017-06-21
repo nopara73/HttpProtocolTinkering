@@ -71,26 +71,27 @@ namespace HttpProtocolTinkering.Client
 			}
 			WriteLine("-------------------");
 
-			var responseString = await originServer.AcceptRequestAsync(requestString).ConfigureAwait(false);
-
-			var response = await new HttpResponseMessage().FromStringAsync(responseString).ConfigureAwait(false);
-
-			ValidateResponse(request, response);
-
-			WriteLine("ARRIVING RESPONSE...");
-			Write(await response.ToHttpStringAsync().ConfigureAwait(false));
-			if (response.Content != null && await response.Content.ReadAsStringAsync().ConfigureAwait(false) != "")
+			using (var responseStream = await originServer.AcceptRequestAsync(requestString).ConfigureAwait(false))
 			{
-				WriteLine();
-			}
-			WriteLine("-------------------");
+				var response = await new HttpResponseMessage().FromStreamAsync(responseStream).ConfigureAwait(false);
 
-			if (response.Version.Major != request.Version.Major)
-			{
-				throw new HttpRequestException($"Origin server's HTTP major version differs: {nameof(response)}: {response.Version.Major} != {nameof(request)}: {request.Version.Major}");
-			}
+				ValidateResponse(request, response);
 
-			return response;
+				WriteLine("ARRIVING RESPONSE...");
+				Write(await response.ToHttpStringAsync().ConfigureAwait(false));
+				if (response.Content != null && await response.Content.ReadAsStringAsync().ConfigureAwait(false) != "")
+				{
+					WriteLine();
+				}
+				WriteLine("-------------------");
+
+				if (response.Version.Major != request.Version.Major)
+				{
+					throw new HttpRequestException($"Origin server's HTTP major version differs: {nameof(response)}: {response.Version.Major} != {nameof(request)}: {request.Version.Major}");
+				}
+
+				return response;
+			}
 		}
 
 		private static void ValidateResponse(HttpRequestMessage request, HttpResponseMessage response)

@@ -21,7 +21,7 @@ namespace HttpProtocolTinkering.Common
 	//					CRLF
 	//					[message - body]
 	public class HttpMessage
-    {
+	{
 		public string StartLine { get; set; }
 		public string Headers { get; set; }
 		public string MessageBody { get; set; }
@@ -61,51 +61,65 @@ namespace HttpProtocolTinkering.Common
 		{
 			return StartLine + Headers + CRLF + MessageBody;
 		}
-		
+
+		public static async Task<HttpMessage> FromStreamAsync(Stream message)
+		{
+			using (var reader = new StreamReader(message))
+			{
+				return await FromTextReaderAsync(reader).ConfigureAwait(false);
+			}
+		}
+
 		public static async Task<HttpMessage> FromStringAsync(string message)
+		{
+			using (var reader = new StringReader(message))
+			{
+				return await FromTextReaderAsync(reader).ConfigureAwait(false);
+			}
+		}
+
+		private static async Task<HttpMessage> FromTextReaderAsync(TextReader reader)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// A recipient MUST parse an HTTP message as a sequence of octets in an
 			// encoding that is a superset of US-ASCII[USASCII].
-			using (var reader = new StringReader(message))
+
+			// Read until the first CRLF
+			// the CRLF is part of the startLine
+			var startLine = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false) + CRLF;
+
+			var headers = "";
+			var firstRead = true;
+			while (true)
 			{
-				// Read until the first CRLF
-				// the CRLF is part of the startLine
-				var startLine = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false) + CRLF;
-
-				var headers = "";
-				var firstRead = true;
-				while (true)
+				var header = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false);
+				if (header == null) throw new FormatException($"Malformed {nameof(HttpMessage)}: End of headers must be CRLF");
+				if (header == "")
 				{
-					var header = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false);
-					if (header == null) throw new FormatException($"Malformed {nameof(HttpMessage)}: End of headers must be CRLF");
-					if (header == "")
-					{
-						// 2 CRLF was read in row so it's the end of the headers
-						break;
-					}
-
-					if (firstRead)
-					{
-						// https://tools.ietf.org/html/rfc7230#section-3
-						// A recipient that receives whitespace between the
-						// start - line and the first header field MUST either reject the message
-						// as invalid or
-						if (Char.IsWhiteSpace(header[0]))
-						{
-							throw new FormatException($"Invalid {nameof(HttpMessage)}: Cannot be whitespace between the start line and the headers");
-						}
-						firstRead = false;
-					}
-
-					headers += header + CRLF; // CRLF is part of the headerstring
+					// 2 CRLF was read in row so it's the end of the headers
+					break;
 				}
 
-				// the rest is body
-				var messageBody = await reader.ReadToEndAsync().ConfigureAwait(false);
+				if (firstRead)
+				{
+					// https://tools.ietf.org/html/rfc7230#section-3
+					// A recipient that receives whitespace between the
+					// start - line and the first header field MUST either reject the message
+					// as invalid or
+					if (Char.IsWhiteSpace(header[0]))
+					{
+						throw new FormatException($"Invalid {nameof(HttpMessage)}: Cannot be whitespace between the start line and the headers");
+					}
+					firstRead = false;
+				}
 
-				return new HttpMessage(startLine, headers, messageBody);
+				headers += header + CRLF; // CRLF is part of the headerstring
 			}
+
+			// the rest is body
+			var messageBody = await reader.ReadToEndAsync().ConfigureAwait(false);
+
+			return new HttpMessage(startLine, headers, messageBody);
 		}
 	}
 }
