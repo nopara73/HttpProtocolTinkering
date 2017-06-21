@@ -10,7 +10,7 @@ namespace System.Net.Http
 {
     public static class HttpResponseMessageExtensions
     {
-		public static async Task<HttpResponseMessage> CreateNewAsync(this HttpResponseMessage me, Stream responseStream)
+		public static async Task<HttpResponseMessage> CreateNewAsync(this HttpResponseMessage me, Stream responseStream, HttpMethod requestMethod)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// The normal procedure for parsing an HTTP message is to read the
@@ -46,7 +46,7 @@ namespace System.Net.Http
 			HttpMessageHelper.CopyHeaders(headerStruct.ResponseHeaders, response.Headers);
 
 			var hasMessageBody = reader.Peek() != -1;
-			HttpMessageHelper.AssertValidResponse(hasMessageBody, headerStruct.ResponseHeaders, statusLine.StatusCode);
+			HttpMessageHelper.AssertValidResponse(hasMessageBody, headerStruct.ResponseHeaders, statusLine.StatusCode, requestMethod);
 			long? contentLength = headerStruct.ContentHeaders?.ContentLength;
 			
 			if (hasMessageBody)

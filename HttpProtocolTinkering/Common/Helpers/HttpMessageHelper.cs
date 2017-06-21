@@ -65,43 +65,76 @@ namespace System.Net.Http
 			return headers;
 		}
 
-		public static void AssertValidResponse(bool hasMessageBody, HttpResponseHeaders responseHeaders, HttpStatusCode status)
+		public static void AssertValidResponse(bool hasMessageBody, HttpResponseHeaders responseHeaders, HttpStatusCode statusCode, HttpMethod requestMethod)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3.3
 			// The presence of a message body in a response depends on both the
 			// request method to which it is responding and the response status code
-			// (Section 3.1.2). 
+			// (Section 3.1.2).  Responses to the HEAD request method(Section 4.3.2
+			// of[RFC7231]) never include a message body because the associated
+			// response header fields(e.g., Transfer - Encoding, Content - Length,
+			// etc.), if present, indicate only what their values would have been if
+			// the request method had been GET(Section 4.3.1 of[RFC7231]). 2xx
+			// (Successful) responses to a CONNECT request method(Section 4.3.6 of
+			// [RFC7231]) switch to tunnel mode instead of having a message body.
 			// All 1xx(Informational), 204(No Content), and 304(Not Modified)
 			// responses do not include a message body.  All other responses do
 			// include a message body, although the body might be of zero length.
 			if (hasMessageBody)
 			{
-				if (HttpStatusCodeHelper.IsInformational(status))
+				if (HttpStatusCodeHelper.IsInformational(statusCode))
 				{
 					throw new HttpRequestException("Response with 1xx status code cannot include message body");
 				}
-				if (status == HttpStatusCode.NoContent)
+				if (statusCode == HttpStatusCode.NoContent)
 				{
 					throw new HttpRequestException("Response with 204 status code cannot include message body");
 				}
-				if (status == HttpStatusCode.NotModified)
+				if (statusCode == HttpStatusCode.NotModified)
 				{
 					throw new HttpRequestException("Response with 304 status code cannot include message body");
+				}
+
+				if (requestMethod == HttpMethod.Head)
+				{
+					throw new HttpRequestException("Response to HEAD method cannot include message body");
+				}
+				if (requestMethod == new HttpMethod("CONNECT"))
+				{
+					if (HttpStatusCodeHelper.IsSuccessful(statusCode))
+					{
+						throw new HttpRequestException("Response to CONNECT method with 2xx status code cannot include message body");
+					}
 				}
 			}
 
 			// https://tools.ietf.org/html/rfc7230#section-3.3.1
-			//  A server MUST NOT send a Transfer - Encoding header field in any
-			//  response with a status code of 1xx(Informational) or 204(No Content).
+			// A server MUST NOT send a Transfer - Encoding header field in any
+			// response with a status code of 1xx(Informational) or 204(No Content)
 			if (responseHeaders.Contains("Transfer-Encoding"))
 			{
-				if (HttpStatusCodeHelper.IsInformational(status))
+				if (HttpStatusCodeHelper.IsInformational(statusCode))
 				{
 					throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any response with a status code of 1xx(Informational)");
 				}
-				if (status == HttpStatusCode.NoContent)
+				if (statusCode == HttpStatusCode.NoContent)
 				{
 					throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any response with a status code of 204(No Content)");
+				}
+			}
+
+			// https://tools.ietf.org/html/rfc7230#section-3.3.1
+			// A server MUST NOT send a Transfer - Encoding header field in
+			// any 2xx(Successful) response to a CONNECT request(Section 4.3.6 of
+			// [RFC7231]).
+			if (requestMethod == new HttpMethod("CONNECT"))
+			{
+				if (responseHeaders.Contains("Transfer-Encoding"))
+				{
+					if (HttpStatusCodeHelper.IsSuccessful(statusCode))
+					{
+						throw new HttpRequestException("A server MUST NOT send a Transfer - Encoding header field in any 2xx(Successful) response to a CONNECT request");
+					}
 				}
 			}
 		}
