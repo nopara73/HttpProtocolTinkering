@@ -10,7 +10,7 @@ namespace System.Net.Http
 {
     public static class HttpResponseMessageExtensions
     {
-		public static async Task<HttpResponseMessage> FromStreamAsync(this HttpResponseMessage me, Stream responseString)
+		public static async Task<HttpResponseMessage> CreateNewAsync(this HttpResponseMessage me, Stream responseString)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// The normal procedure for parsing an HTTP message is to read the
@@ -19,12 +19,12 @@ namespace System.Net.Http
 			// determine if a message body is expected.If a message body has been
 			// indicated, then it is read as a stream until an amount of octets
 			// equal to the message body length is read or the connection is closed.
-			var message = await HttpMessage.FromStreamAsync(responseString).ConfigureAwait(false);
-			var statusLine = StatusLine.FromString(message.StartLine);
+			var message = await HttpMessage.CreateNewAsync(responseString).ConfigureAwait(false);
+			var statusLine = StatusLine.CreateNew(message.StartLine);
 				
 			var response = new HttpResponseMessage(statusLine.StatusCode);
 
-			var headerSection = HeaderSection.FromString(message.Headers);
+			var headerSection = HeaderSection.CreateNew(message.Headers);
 			var headerStruct = headerSection.ToHttpResponseHeaders();
 			if (headerStruct.ResponseHeaders != null)
 			{
@@ -51,7 +51,7 @@ namespace System.Net.Http
 			string headers = "";
 			if (me.Headers != null && me.Headers.Count() != 0)
 			{
-				var headerSection = HeaderSection.FromHttpHeaders(me.Headers);
+				var headerSection = HeaderSection.CreateNew(me.Headers);
 				headers += headerSection.ToString(endWithTwoCRLF: false);
 			}
 
@@ -60,7 +60,7 @@ namespace System.Net.Http
 			{
 				if (me.Content.Headers != null && me.Content.Headers.Count() != 0)
 				{
-					var headerSection = HeaderSection.FromHttpHeaders(me.Content.Headers);
+					var headerSection = HeaderSection.CreateNew(me.Content.Headers);
 					headers += headerSection.ToString(endWithTwoCRLF: false);
 				}
 

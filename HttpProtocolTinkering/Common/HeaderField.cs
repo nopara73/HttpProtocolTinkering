@@ -50,7 +50,7 @@ namespace HttpProtocolTinkering.Common
 			return ToString(true);
 		}
 
-		public static HeaderField FromString(string fieldString)
+		public static HeaderField CreateNew(string fieldString)
 		{
 			fieldString = fieldString.TrimEnd(CRLF, StringComparison.Ordinal);
 

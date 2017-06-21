@@ -24,7 +24,7 @@ namespace HttpProtocolTinkering.Common
 			StartLineString = Method.Method + SP + URI + SP + Protocol.ToString() + CRLF;
 		}
 
-		public static RequestLine FromString(string requestLineString)
+		public static RequestLine CreateNew(string requestLineString)
 		{
 			try
 			{

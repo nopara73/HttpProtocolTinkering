@@ -73,7 +73,7 @@ namespace HttpProtocolTinkering.Client
 
 			using (var responseStream = await originServer.AcceptRequestAsync(requestString).ConfigureAwait(false))
 			{
-				var response = await new HttpResponseMessage().FromStreamAsync(responseStream).ConfigureAwait(false);
+				var response = await new HttpResponseMessage().CreateNewAsync(responseStream).ConfigureAwait(false);
 
 				ValidateResponse(request, response);
 

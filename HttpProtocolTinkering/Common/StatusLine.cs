@@ -17,7 +17,7 @@ namespace HttpProtocolTinkering.Common
 			StartLineString = Protocol.ToString() + SP + (int)StatusCode + SP + StatusCode.ToReasonString() + CRLF;
 		}
 
-		public static StatusLine FromString(string statusLineString)
+		public static StatusLine CreateNew(string statusLineString)
 		{
 			try
 			{
@@ -27,7 +27,10 @@ namespace HttpProtocolTinkering.Common
 				var reason = parts[2];
 				var protocol = new HttpProtocol(protocolString);
 				var code = int.Parse(codeString);
-				new HttpStatusCode().Validate(code);
+				if (!HttpStatusCodeHelper.IsValidCode(code))
+				{
+					throw new NotSupportedException($"Invalid HTTP status code: {code}");
+				}
 
 				var statusCode = (HttpStatusCode)code;
 

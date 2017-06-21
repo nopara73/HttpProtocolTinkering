@@ -37,18 +37,12 @@ namespace HttpProtocolTinkering
 
 			var postRequestWithContent = new HttpRequestMessage(HttpMethod.Post, uriBuilder.BuildUri("boo"))
 			{
-				Content = new StringContent("bee")
+				Content = new StringContent("bee2")
 			};
 			userAgent.SendRequestAsync(originServer, postRequestWithContent).Wait();
 
 			var headRequest = new HttpRequestMessage(HttpMethod.Head, uriBuilder.BuildUri("foo"));
 			userAgent.SendRequestAsync(originServer, headRequest).Wait();
-
-			var postRequestWithOut = new HttpRequestMessage(HttpMethod.Post, uriBuilder.BuildUri("boo"))
-			{
-				Content = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("foo", "bar") })
-			};
-			userAgent.SendRequestAsync(originServer, postRequestWithContent).Wait();
 
 			ReadKey();
         }

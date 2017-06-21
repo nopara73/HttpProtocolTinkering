@@ -56,7 +56,7 @@ namespace HttpProtocolTinkering.Common
 			return StartLine + Headers + CRLF;
 		}
 		
-		public static async Task<HttpMessageHead> FromStreamAsync(Stream stream)
+		public static async Task<HttpMessageHead> CreateNewAsync(Stream stream)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// A recipient MUST parse an HTTP message as a sequence of octets in an

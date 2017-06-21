@@ -31,7 +31,7 @@ namespace HttpProtocolTinkering.Common
 		{
 			return ToString(false);
 		}
-		public static HeaderSection FromString(string headersString)
+		public static HeaderSection CreateNew(string headersString)
 		{
 			headersString = HeaderField.CorrectObsFolding(headersString);
 
@@ -52,7 +52,7 @@ namespace HttpProtocolTinkering.Common
 					}
 					else
 					{
-						hs.Fields.Add(HeaderField.FromString(field));
+						hs.Fields.Add(HeaderField.CreateNew(field));
 					}
 				}
 				return hs;
@@ -100,7 +100,7 @@ namespace HttpProtocolTinkering.Common
 			};
 		}
 
-		public static HeaderSection FromHttpHeaders(HttpHeaders headers)
+		public static HeaderSection CreateNew(HttpHeaders headers)
 		{
 			var hs = new HeaderSection();
 			var message = new HttpRequestMessage();

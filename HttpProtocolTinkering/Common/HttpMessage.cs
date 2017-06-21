@@ -62,23 +62,23 @@ namespace HttpProtocolTinkering.Common
 			return StartLine + Headers + CRLF + MessageBody;
 		}
 
-		public static async Task<HttpMessage> FromStreamAsync(Stream message)
+		public static async Task<HttpMessage> CreateNewAsync(Stream message)
 		{
 			using (var reader = new StreamReader(message))
 			{
-				return await FromTextReaderAsync(reader).ConfigureAwait(false);
+				return await CreateNewAsync(reader).ConfigureAwait(false);
 			}
 		}
 
-		public static async Task<HttpMessage> FromStringAsync(string message)
+		public static async Task<HttpMessage> CreateNewAsync(string message)
 		{
 			using (var reader = new StringReader(message))
 			{
-				return await FromTextReaderAsync(reader).ConfigureAwait(false);
+				return await CreateNewAsync(reader).ConfigureAwait(false);
 			}
 		}
 
-		private static async Task<HttpMessage> FromTextReaderAsync(TextReader reader)
+		private static async Task<HttpMessage> CreateNewAsync(TextReader reader)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// A recipient MUST parse an HTTP message as a sequence of octets in an

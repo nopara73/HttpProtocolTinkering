@@ -18,5 +18,18 @@ namespace System.Net
 		{
 			return ((int)status).ToString()[0] == '2';
 		}
+		
+		public static bool IsValidCode(int codeToValidate)
+		{
+			foreach (var code in Enum.GetValues(typeof(HttpStatusCode)))
+			{
+				if ((int)code == codeToValidate)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
 	}
 }
