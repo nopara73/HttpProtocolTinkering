@@ -31,74 +31,28 @@ namespace System.Net.Http
 			//					[message - body]
 			var reader = new StreamReader(stream: requestStream); // todo: dispose StreamReader, but leave open the requestStream
 			var position = 0;
-			// https://tools.ietf.org/html/rfc7230#section-3
-			// A recipient MUST parse an HTTP message as a sequence of octets in an
-			// encoding that is a superset of US-ASCII[USASCII].
-
-			// Read until the first CRLF
-			// the CRLF is part of the startLine
-			var startLine = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false) + CRLF;
-			position += startLine.Length + 2;
-			if (startLine == null || startLine == "") throw new FormatException($"{nameof(startLine)} cannot be null or empty");
+			string startLine = await HttpMessageHelper.ReadStartLineAsync(reader).ConfigureAwait(false);
+			position += startLine.Length;
 
 			var requestLine = RequestLine.CreateNew(startLine);
 			var request = new HttpRequestMessage(requestLine.Method, requestLine.URI);
 
-			var headers = "";
-			var firstRead = true;
-			while (true)
-			{
-				var header = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false);
-				position += header.Length + 2;
-				if (header == null) throw new FormatException($"Malformed {nameof(HttpMessage)}: End of headers must be CRLF");
-				if (header == "")
-				{
-					position -= 2;
-					// 2 CRLF was read in row so it's the end of the headers
-					break;
-				}
+			string headers = await HttpMessageHelper.ReadHeadersAsync(reader).ConfigureAwait(false);
+			position += headers.Length + 2;
 
-				if (firstRead)
-				{
-					// https://tools.ietf.org/html/rfc7230#section-3
-					// A recipient that receives whitespace between the
-					// start - line and the first header field MUST either reject the message
-					// as invalid or consume each whitespace-preceded line without further
-					// processing of it(i.e., ignore the entire line, along with any				 
-					// subsequent lines preceded by whitespace, until a properly formed				 
-					// header field is received or the header section is terminated).
-					if (Char.IsWhiteSpace(header[0]))
-					{
-						throw new FormatException($"Invalid {nameof(HttpMessage)}: Cannot be whitespace between the start line and the headers");
-					}
-					firstRead = false;
-				}
-
-				headers += header + CRLF; // CRLF is part of the headerstring
-			}
-			if (headers == null || headers == "")
-			{
-				headers = "";
-			}
 			var headerSection = HeaderSection.CreateNew(headers);
 			var headerStruct = headerSection.ToHttpRequestHeaders();
-			if (headerStruct.RequestHeaders != null)
-			{
-				foreach (var header in headerStruct.RequestHeaders)
-				{
-					request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-				}
-			}
+			HttpMessageHelper.CopyHeaders(headerStruct.RequestHeaders, request.Headers);
 
-			// https://tools.ietf.org/html/rfc7230#section-3.3
-			// The presence of a message body in a request is signaled by a
-			// Content - Length or Transfer-Encoding header field. 
-			// Request message framing is independent of method semantics, even if the method does
-			// not define any use for a message body.
 			var hasMessageBody = reader.Peek() != -1;
 			long? contentLength = headerStruct.ContentHeaders?.ContentLength;
 			if (headerStruct.RequestHeaders.TransferEncoding.Count == 0 && contentLength == null)
 			{
+				// https://tools.ietf.org/html/rfc7230#section-3.3
+				// The presence of a message body in a request is signaled by a
+				// Content - Length or Transfer-Encoding header field. 
+				// Request message framing is independent of method semantics, even if the method does
+				// not define any use for a message body.
 				if (hasMessageBody)
 				{
 					throw new HttpRequestException("Message body is not indicated in the headers, yet it's present");
@@ -114,6 +68,7 @@ namespace System.Net.Http
 					// identical to the payload body unless a transfer coding has been applied.
 					if (headerStruct.RequestHeaders.TransferEncoding.Count == 0)
 					{
+						if (contentLength == null) throw new NotImplementedException();
 						request.Content = new StreamContent(new SubStream(reader.BaseStream, position, (int)contentLength));
 					}
 					else
@@ -131,27 +86,13 @@ namespace System.Net.Http
 				}
 				else
 				{
-					if (headerStruct.ContentHeaders != null)
-					{
-						request.Content = new ByteArrayContent(new byte[] { }); // dummy empty content
-					}
-					else
-					{
-						request.Content = null;
-					}
+					request.Content = HttpMessageHelper.GetDummyOrNullContent(headerStruct.ContentHeaders);
 				}
 
-				if (headerStruct.ContentHeaders != null)
-				{
-					foreach (var header in headerStruct.ContentHeaders)
-					{
-						request.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
-					}
-				}
+				HttpMessageHelper.CopyHeaders(headerStruct.ContentHeaders, request.Content.Headers);
 			}
 
 			return request;
-
 		}
 
 		public static async Task<string> ToHttpStringAsync(this HttpRequestMessage me)

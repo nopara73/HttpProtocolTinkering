@@ -65,6 +65,7 @@ namespace HttpProtocolTinkering.Common
 			{
 				Content = new ByteArrayContent(new byte[] { })
 			};
+			message.Content.Headers.ContentLength = null;
 			foreach (var field in Fields)
 			{
 				if (field.Name.StartsWith("Content-", StringComparison.Ordinal))
@@ -73,6 +74,7 @@ namespace HttpProtocolTinkering.Common
 				}
 				else message.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
+
 			return new HttpRequestContentHeaders
 			{
 				RequestHeaders = message.Headers,
@@ -85,6 +87,7 @@ namespace HttpProtocolTinkering.Common
 			{
 				Content = new ByteArrayContent(new byte[] { })
 			};
+			message.Content.Headers.ContentLength = null;
 			foreach (var field in Fields)
 			{
 				if(field.Name.StartsWith("Content-", StringComparison.Ordinal))
@@ -93,6 +96,7 @@ namespace HttpProtocolTinkering.Common
 				}
 				else message.Headers.TryAddWithoutValidation(field.Name, field.Value);
 			}
+
 			return new HttpResponseContentHeaders
 			{
 				ResponseHeaders = message.Headers,

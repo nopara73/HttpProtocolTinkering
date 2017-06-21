@@ -10,7 +10,7 @@ namespace System.Net.Http
 {
     public static class HttpResponseMessageExtensions
     {
-		public static async Task<HttpResponseMessage> CreateNewAsync(this HttpResponseMessage me, Stream responseString)
+		public static async Task<HttpResponseMessage> CreateNewAsync(this HttpResponseMessage me, Stream responseStream)
 		{
 			// https://tools.ietf.org/html/rfc7230#section-3
 			// The normal procedure for parsing an HTTP message is to read the
@@ -19,24 +19,68 @@ namespace System.Net.Http
 			// determine if a message body is expected.If a message body has been
 			// indicated, then it is read as a stream until an amount of octets
 			// equal to the message body length is read or the connection is closed.
-			var message = await HttpMessage.CreateNewAsync(responseString).ConfigureAwait(false);
-			var statusLine = StatusLine.CreateNew(message.StartLine);
-				
+
+			// https://tools.ietf.org/html/rfc7230#section-3
+			// All HTTP/ 1.1 messages consist of a start - line followed by a sequence
+			// of octets in a format similar to the Internet Message Format
+			// [RFC5322]: zero or more header fields(collectively referred to as
+			// the "headers" or the "header section"), an empty line indicating the
+			// end of the header section, and an optional message body.
+			// HTTP - message = start - line
+			//					* (header - field CRLF )
+			//					CRLF
+			//					[message - body]
+			var reader = new StreamReader(stream: responseStream); // todo: dispose StreamReader, but leave open the requestStream
+			var position = 0;
+			string startLine = await HttpMessageHelper.ReadStartLineAsync(reader).ConfigureAwait(false);
+			position += startLine.Length;
+
+			var statusLine = StatusLine.CreateNew(startLine);
 			var response = new HttpResponseMessage(statusLine.StatusCode);
 
-			var headerSection = HeaderSection.CreateNew(message.Headers);
+			string headers = await HttpMessageHelper.ReadHeadersAsync(reader).ConfigureAwait(false);
+			position += headers.Length + 2;
+			
+			var headerSection = HeaderSection.CreateNew(headers);
 			var headerStruct = headerSection.ToHttpResponseHeaders();
-			if (headerStruct.ResponseHeaders != null)
+			HttpMessageHelper.CopyHeaders(headerStruct.ResponseHeaders, response.Headers);
+
+			var hasMessageBody = reader.Peek() != -1;
+			HttpMessageHelper.AssertValidResponse(hasMessageBody, headerStruct.ResponseHeaders, statusLine.StatusCode);
+			long? contentLength = headerStruct.ContentHeaders?.ContentLength;
+			
+			if (hasMessageBody)
 			{
-				foreach (var header in headerStruct.ResponseHeaders)
+				// https://tools.ietf.org/html/rfc7230#section-3.3
+				// The message body is
+				// identical to the payload body unless a transfer coding has been applied.
+				if (headerStruct.ResponseHeaders.TransferEncoding.Count == 0)
 				{
-					response.Headers.TryAddWithoutValidation(header.Key, header.Value);
+					if (contentLength == null) throw new NotImplementedException();
+					response.Content = new StreamContent(new SubStream(reader.BaseStream, position, (int)contentLength));
+				}
+				else
+				{
+					// https://tools.ietf.org/html/rfc7230#section-3.3.2
+					// A sender MUST NOT send a Content - Length header field in any message
+					// that contains a Transfer-Encoding header field.
+					if (contentLength == null)
+					{
+						throw new HttpRequestException("A sender MUST NOT send a Content-Length header field in any message that contains a Transfer-Encoding header field.");
+					}
+
+					throw new NotImplementedException();
 				}
 			}
+			else
+			{
+				response.Content = HttpMessageHelper.GetDummyOrNullContent(headerStruct.ContentHeaders);
+			}
 
-			var messageBody = new MessageBody(message.MessageBody, response.Headers, headerStruct.ContentHeaders, statusLine.StatusCode);
-			response.Content = messageBody.ToHttpContent();
-
+			if (response.Content != null)
+			{
+				HttpMessageHelper.CopyHeaders(headerStruct.ContentHeaders, response.Content.Headers);
+			}
 			return response;
 		}
 
