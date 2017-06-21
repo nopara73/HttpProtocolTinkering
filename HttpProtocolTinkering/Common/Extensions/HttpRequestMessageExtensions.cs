@@ -118,7 +118,7 @@ namespace System.Net.Http
 				messageBody = await me.Content.ReadAsStringAsync().ConfigureAwait(false);
 			}
 
-			return new HttpMessage(startLine, headers, messageBody).ToString();
+			return startLine + headers + CRLF + messageBody;
 		}
 	}
 }
