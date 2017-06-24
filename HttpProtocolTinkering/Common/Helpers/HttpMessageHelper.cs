@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HttpProtocolTinkering.Common;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -65,86 +66,138 @@ namespace System.Net.Http
 			return headers;
 		}
 
-		public static void AssertValidResponse(bool hasMessageBody, HttpResponseHeaders responseHeaders, HttpContentHeaders contentHeaders, HttpStatusCode statusCode, HttpMethod requestMethod)
+		public static HttpContent GetContent(StreamReader reader, int position, HttpRequestContentHeaders headerStruct)
 		{
-			// https://tools.ietf.org/html/rfc7230#section-3.3
-			// The presence of a message body in a response depends on both the
-			// request method to which it is responding and the response status code
-			// (Section 3.1.2).  Responses to the HEAD request method(Section 4.3.2
-			// of[RFC7231]) never include a message body because the associated
-			// response header fields(e.g., Transfer - Encoding, Content - Length,
-			// etc.), if present, indicate only what their values would have been if
-			// the request method had been GET(Section 4.3.1 of[RFC7231]). 2xx
-			// (Successful) responses to a CONNECT request method(Section 4.3.6 of
-			// [RFC7231]) switch to tunnel mode instead of having a message body.
-			// All 1xx(Informational), 204(No Content), and 304(Not Modified)
-			// responses do not include a message body.  All other responses do
-			// include a message body, although the body might be of zero length.
-			if (hasMessageBody)
+			if (headerStruct.RequestHeaders != null && headerStruct.RequestHeaders.Contains("Transfer-Encoding"))
 			{
-				if (HttpStatusCodeHelper.IsInformational(statusCode))
+				if (headerStruct.RequestHeaders.TransferEncoding.Last().Value == "chunked")
 				{
-					throw new HttpRequestException("Response with 1xx status code cannot include message body");
+					throw new NotImplementedException();
 				}
-				if (statusCode == HttpStatusCode.NoContent)
+				// https://tools.ietf.org/html/rfc7230#section-3.3.3
+				// If a Transfer - Encoding header field is present in a response and
+				// the chunked transfer coding is not the final encoding, the
+				// message body length is determined by reading the connection until
+				// it is closed by the server.  If a Transfer - Encoding header field
+				// is present in a request and the chunked transfer coding is not
+				// the final encoding, the message body length cannot be determined
+				// reliably; the server MUST respond with the 400(Bad Request)
+				// status code and then close the connection.
+				else
 				{
-					throw new HttpRequestException("Response with 204 status code cannot include message body");
-				}
-				if (statusCode == HttpStatusCode.NotModified)
-				{
-					throw new HttpRequestException("Response with 304 status code cannot include message body");
-				}
-
-				if (requestMethod == HttpMethod.Head)
-				{
-					throw new HttpRequestException("Response to HEAD method cannot include message body");
-				}
-				if (requestMethod == new HttpMethod("CONNECT"))
-				{
-					if (HttpStatusCodeHelper.IsSuccessful(statusCode))
-					{
-						throw new HttpRequestException("Response to CONNECT method with 2xx status code cannot include message body");
-					}
+					return new StreamContent(new SubStream(reader.BaseStream, position, reader.BaseStream.Length - position));
 				}
 			}
-
-			// https://tools.ietf.org/html/rfc7230#section-3.3.1
-			// A server MUST NOT send a Transfer-Encoding header field in any
-			// response with a status code of 1xx(Informational) or 204(No Content).
-			// https://tools.ietf.org/html/rfc7230#section-3.3.2
-			// A server MUST NOT send a Content-Length header field in any
-			// response with a status code of 1xx(Informational) or 204(No Content).
-			if (responseHeaders.Contains("Transfer-Encoding") || contentHeaders.Contains("Content-Length"))
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// 5.If a valid Content - Length header field is present without
+			// Transfer - Encoding, its decimal value defines the expected message
+			// body length in octets.If the sender closes the connection or
+			// the recipient times out before the indicated number of octets are
+			// received, the recipient MUST consider the message to be
+			// incomplete and close the connection.
+			else if (headerStruct.ContentHeaders.Contains("Content-Length"))
 			{
-				if (HttpStatusCodeHelper.IsInformational(statusCode))
-				{
-					throw new HttpRequestException("A server MUST NOT send a Transfer-Encoding or Content-Length header fields in any response with a status code of 1xx(Informational)");
-				}
-				if (statusCode == HttpStatusCode.NoContent)
-				{
-					throw new HttpRequestException("A server MUST NOT send a Transfer-Encoding or Content-Length header fields in any response with a status code of 204(No Content)");
-				}
+				long? contentLength = headerStruct.ContentHeaders?.ContentLength;
+				return new StreamContent(new SubStream(reader.BaseStream, position, (long)contentLength));
 			}
 
-			// https://tools.ietf.org/html/rfc7230#section-3.3.1
-			// A server MUST NOT send a Transfer-Encoding header field in any 2xx
-			// (Successful) response to a CONNECT request(Section 4.3.6 of
-			// [RFC7231]).
-			// https://tools.ietf.org/html/rfc7230#section-3.3.2
-			// A server MUST NOT send a Content-Length header field in any 2xx
-			// (Successful) response to a CONNECT request(Section 4.3.6 of
-			// [RFC7231]).
-			if (requestMethod == new HttpMethod("CONNECT"))
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// 6.If this is a request message and none of the above are true, then
+			// the message body length is zero (no message body is present).
+			// 7.  Otherwise, this is a response message without a declared message
+			// body length, so the message body length is determined by the
+			// number of octets received prior to the server closing the
+			// connection.
+			return GetDummyOrNullContent(headerStruct.ContentHeaders);
+		}
+
+		public static HttpContent GetContent(StreamReader reader, int position, HttpResponseContentHeaders headerStruct, HttpMethod requestMethod, StatusLine statusLine)
+		{
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// The length of a message body is determined by one of the following
+			// (in order of precedence):
+			// 1.Any response to a HEAD request and any response with a 1xx
+			// (Informational), 204(No Content), or 304(Not Modified) status
+			// code is always terminated by the first empty line after the
+			// header fields, regardless of the header fields present in the
+			// message, and thus cannot contain a message body.
+			if (requestMethod == HttpMethod.Head
+				|| HttpStatusCodeHelper.IsInformational(statusLine.StatusCode)
+				|| statusLine.StatusCode == HttpStatusCode.NoContent
+				|| statusLine.StatusCode == HttpStatusCode.NotModified)
 			{
-				if (responseHeaders.Contains("Transfer-Encoding") || contentHeaders.Contains("Content-Length"))
+				return GetDummyOrNullContent(headerStruct.ContentHeaders);
+			}
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// 2.Any 2xx(Successful) response to a CONNECT request implies that
+			// the connection will become a tunnel immediately after the empty
+			// line that concludes the header fields.A client MUST ignore any
+			// Content - Length or Transfer-Encoding header fields received in
+			// such a message.
+			else if (requestMethod == new HttpMethod("CONNECT"))
+			{
+				if (HttpStatusCodeHelper.IsSuccessful(statusLine.StatusCode))
 				{
-					if (HttpStatusCodeHelper.IsSuccessful(statusCode))
-					{
-						throw new HttpRequestException("A server MUST NOT send a Transfer-Encoding or Content-Length header fields in any 2xx(Successful) response to a CONNECT request");
-					}
+					return null;
 				}
 			}
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// 3.If a Transfer-Encoding header field is present and the chunked
+			// transfer coding(Section 4.1) is the final encoding, the message
+			// body length is determined by reading and decoding the chunked
+			// data until the transfer coding indicates the data is complete.
+			if (headerStruct.ResponseHeaders != null && headerStruct.ResponseHeaders.Contains("Transfer-Encoding"))
+			{
+				if (headerStruct.ResponseHeaders.TransferEncoding.Last().Value == "chunked")
+				{
+					throw new NotImplementedException();
+				}
+				// https://tools.ietf.org/html/rfc7230#section-3.3.3
+				// If a Transfer - Encoding header field is present in a response and
+				// the chunked transfer coding is not the final encoding, the
+				// message body length is determined by reading the connection until
+				// it is closed by the server.  If a Transfer - Encoding header field
+				// is present in a request and the chunked transfer coding is not
+				// the final encoding, the message body length cannot be determined
+				// reliably; the server MUST respond with the 400(Bad Request)
+				// status code and then close the connection.
+				else
+				{
+					return new StreamContent(new SubStream(reader.BaseStream, position, reader.BaseStream.Length - position));
+				}
+			}
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// 5.If a valid Content - Length header field is present without
+			// Transfer - Encoding, its decimal value defines the expected message
+			// body length in octets.If the sender closes the connection or
+			// the recipient times out before the indicated number of octets are
+			// received, the recipient MUST consider the message to be
+			// incomplete and close the connection.
+			else if (headerStruct.ContentHeaders.Contains("Content-Length"))
+			{
+				long? contentLength = headerStruct.ContentHeaders?.ContentLength;
+				return new StreamContent(new SubStream(reader.BaseStream, position, (long)contentLength));
+			}
 
+			// https://tools.ietf.org/html/rfc7230#section-3.3.3
+			// 6.If this is a request message and none of the above are true, then
+			// the message body length is zero (no message body is present).
+			// 7.  Otherwise, this is a response message without a declared message
+			// body length, so the message body length is determined by the
+			// number of octets received prior to the server closing the
+			// connection.
+			return new StreamContent(new SubStream(reader.BaseStream, position, reader.BaseStream.Length - position));
+		}
+
+		public static void AssertValidResponse(HttpHeaders messageHeaders, HttpContentHeaders contentHeaders)
+		{
+			if (messageHeaders != null && messageHeaders.Contains("Transfer-Encoding"))
+			{
+				if (contentHeaders != null && contentHeaders.Contains("Content-Length"))
+				{
+					contentHeaders.Remove("Content-Length");
+				}
+			}
 			// Any Content-Length field value greater than or equal to zero is valid.
 			if (contentHeaders.Contains("Content-Length"))
 			{

@@ -40,60 +40,20 @@ namespace System.Net.Http
 
 			string headers = await HttpMessageHelper.ReadHeadersAsync(reader).ConfigureAwait(false);
 			position += headers.Length + 2;
-			
+
 			var headerSection = HeaderSection.CreateNew(headers);
 			var headerStruct = headerSection.ToHttpResponseHeaders();
 			HttpMessageHelper.CopyHeaders(headerStruct.ResponseHeaders, response.Headers);
-			
-			var hasMessageBody = reader.Peek() != -1;
-			HttpMessageHelper.AssertValidResponse(hasMessageBody, headerStruct.ResponseHeaders, headerStruct.ContentHeaders, statusLine.StatusCode, requestMethod);
-			long? contentLength = headerStruct.ContentHeaders?.ContentLength;
-			
-			if (hasMessageBody)
-			{
-				// https://tools.ietf.org/html/rfc7230#section-3.3
-				// The message body is
-				// identical to the payload body unless a transfer coding has been applied.
-				if (headerStruct.ResponseHeaders.TransferEncoding.Count == 0)
-				{
-					if (contentLength == null)
-					{
-						// If didn't get content lenght guess it
-						// https://tools.ietf.org/html/rfc7230#section-3.3.2
-						// Aside from the cases defined above, in the absence of
-						// Transfer - Encoding, an origin server SHOULD send a Content - Length
-						// header field when the payload body size is known prior to sending the
-						// complete header section.  This will allow downstream recipients to
-						// measure transfer progress, know when a received message is complete,
-						// and potentially reuse the connection for additional requests.
-						response.Content = new StreamContent(new SubStream(reader.BaseStream, position, reader.BaseStream.Length - position));
-					}
-					else response.Content = new StreamContent(new SubStream(reader.BaseStream, position, (long)contentLength));
-				}
-				else
-				{
-					// https://tools.ietf.org/html/rfc7230#section-3.3.2
-					// A sender MUST NOT send a Content - Length header field in any message
-					// that contains a Transfer-Encoding header field.
-					if (contentLength == null)
-					{
-						throw new HttpRequestException("A sender MUST NOT send a Content-Length header field in any message that contains a Transfer-Encoding header field.");
-					}
 
-					throw new NotImplementedException();
-				}
-			}
-			else
-			{
-				response.Content = HttpMessageHelper.GetDummyOrNullContent(headerStruct.ContentHeaders);
-			}
+			HttpMessageHelper.AssertValidResponse(headerStruct.ResponseHeaders, headerStruct.ContentHeaders);
+			response.Content = HttpMessageHelper.GetContent(reader, position, headerStruct, requestMethod, statusLine);
 
 			if (response.Content != null)
 			{
 				HttpMessageHelper.CopyHeaders(headerStruct.ContentHeaders, response.Content.Headers);
 			}
 			return response;
-		}
+		}		
 
 		public static async Task<Stream> ToStreamAsync(this HttpResponseMessage me)
 		{
