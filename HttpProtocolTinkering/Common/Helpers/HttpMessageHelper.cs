@@ -21,7 +21,11 @@ namespace System.Net.Http
 
 			// Read until the first CRLF
 			// the CRLF is part of the startLine
-			var startLine = await reader.ReadLineAsync(strictCRLF: true).ConfigureAwait(false) + CRLF;
+			// https://tools.ietf.org/html/rfc7230#section-3.5
+			// Although the line terminator for the start-line and header fields is
+			// the sequence CRLF, a recipient MAY recognize a single LF as a line
+			// terminator and ignore any preceding CR.
+			var startLine = await reader.ReadPartAsync(LF.ToCharArray().First()).ConfigureAwait(false) + LF;
 			if (startLine == null || startLine == "") throw new FormatException($"{nameof(startLine)} cannot be null or empty");
 			return startLine;
 		}
